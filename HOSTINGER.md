@@ -56,3 +56,19 @@ Typical build output folders:
 - `out`
 
 The homepage should normally be named `index.html`.
+
+This repo includes a deployment script:
+
+```powershell
+.\scripts\deploy-hostinger.ps1
+```
+
+The script reads FTP connection values from `.env.local` and uploads the static site files to `public_html`.
+
+## Preview Before DNS
+
+While DNS is still registering or propagating, use Hostinger's preview option in hPanel:
+
+`Websites -> accessibleaudio.co.za -> Dashboard -> Preview`
+
+Hostinger also supports previewing by editing the local hosts file so `accessibleaudio.co.za` points to `89.117.169.254` on your own machine.
