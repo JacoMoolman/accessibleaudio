@@ -43,6 +43,8 @@ Hostinger notes that DNS propagation can take up to 24 hours.
 
 Do not save FTP passwords or Hostinger account passwords in this repo.
 
+Private FTP connection values are stored locally in `.env.local`. That file is ignored by Git. Keep the safe variable template in `.env.example`.
+
 ## Deployment Reminder
 
 For a static site, upload the built website files into `public_html`.
