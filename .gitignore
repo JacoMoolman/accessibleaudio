@@ -17,6 +17,7 @@ npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
 tmp/
+mail/
 
 # OS/editor files
 .DS_Store
