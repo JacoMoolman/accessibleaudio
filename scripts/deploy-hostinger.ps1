@@ -126,7 +126,11 @@ if ([string]::IsNullOrWhiteSpace($remotePath)) {
   throw "FTP_REMOTE_PATH must be set in $EnvPath"
 }
 
-$baseUri = "ftp://$hostValue/$remotePath"
+if ($remotePath -eq "/") {
+  $baseUri = "ftp://$hostValue/"
+} else {
+  $baseUri = "ftp://$hostValue/$remotePath"
+}
 $files = @(
   "index.html",
   "styles.css",

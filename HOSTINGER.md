@@ -45,6 +45,8 @@ Do not save FTP passwords or Hostinger account passwords in this repo.
 
 Private FTP connection values are stored locally in `.env.local`. That file is ignored by Git. Keep the safe variable template in `.env.example`.
 
+For this FTP account, the login opens directly inside the web root. Use `FTP_REMOTE_PATH=/` in `.env.local` and upload `index.html`, `styles.css`, and `assets/` there.
+
 ## Deployment Reminder
 
 For a static site, upload the built website files into `public_html`.
