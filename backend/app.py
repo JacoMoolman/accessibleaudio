@@ -39,6 +39,8 @@ def create_app(
     verifier = SupabaseTokenVerifier(
         jwt_secret=settings.supabase_jwt_secret,
         jwks_url=settings.supabase_jwks_url,
+        supabase_url=settings.supabase_url,
+        supabase_anon_key=settings.supabase_anon_key,
     )
 
     app = FastAPI(title="Accessible Audio Submit API")

@@ -11,9 +11,19 @@ class AuthenticatedUser:
 
 
 class SupabaseTokenVerifier:
-    def __init__(self, jwt_secret: str | None = None, jwks_url: str | None = None):
+    def __init__(
+        self,
+        jwt_secret: str | None = None,
+        jwks_url: str | None = None,
+        supabase_url: str | None = None,
+        supabase_anon_key: str | None = None,
+        http_client: Any | None = None,
+    ):
         self.jwt_secret = jwt_secret
         self.jwks_url = jwks_url
+        self.supabase_url = supabase_url.rstrip("/") if supabase_url else None
+        self.supabase_anon_key = supabase_anon_key
+        self.http_client = http_client
 
     def verify_authorization_header(self, authorization: str | None) -> AuthenticatedUser:
         if not authorization or not authorization.lower().startswith("bearer "):
@@ -27,6 +37,9 @@ class SupabaseTokenVerifier:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Missing bearer token",
             )
+
+        if not self.jwt_secret and not self.jwks_url:
+            return self._verify_with_supabase_user_endpoint(token)
 
         payload = self._decode_token(token)
         user_id = payload.get("sub")
@@ -67,4 +80,38 @@ class SupabaseTokenVerifier:
                 detail="Invalid bearer token",
             ) from exc
 
-        raise RuntimeError("Configure SUPABASE_JWT_SECRET or SUPABASE_JWKS_URL")
+        raise RuntimeError(
+            "Configure SUPABASE_JWT_SECRET, SUPABASE_JWKS_URL, or SUPABASE_ANON_KEY"
+        )
+
+    def _verify_with_supabase_user_endpoint(self, token: str) -> AuthenticatedUser:
+        if not self.supabase_url or not self.supabase_anon_key:
+            raise RuntimeError(
+                "Configure SUPABASE_ANON_KEY to verify tokens through Supabase Auth"
+            )
+        client = self.http_client
+        if client is None:
+            import httpx
+
+            client = httpx.Client()
+        response = client.get(
+            f"{self.supabase_url}/auth/v1/user",
+            headers={
+                "apikey": self.supabase_anon_key,
+                "Authorization": f"Bearer {token}",
+            },
+            timeout=10,
+        )
+        if response.status_code != 200:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid bearer token",
+            )
+        data = response.json()
+        user_id = data.get("id") or data.get("sub")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token is missing user id",
+            )
+        return AuthenticatedUser(id=str(user_id), email=data.get("email"))

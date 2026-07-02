@@ -50,7 +50,6 @@ Set these Render environment variables:
 SUPABASE_URL
 SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
-SUPABASE_JWT_SECRET
 AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY
 AWS_REGION=us-east-1
@@ -61,6 +60,10 @@ ALLOWED_ORIGINS=https://accessibleaudio.co.za,https://www.accessibleaudio.co.za,
 
 Do not put AWS, Supabase service role, OpenAI, Anthropic, or Render tokens in
 frontend code.
+
+The backend verifies Supabase user JWTs through Supabase Auth's `/auth/v1/user`
+endpoint using `SUPABASE_URL` and `SUPABASE_ANON_KEY`. `SUPABASE_JWT_SECRET` is
+optional and is not required for this deployment path.
 
 ## Local Run
 

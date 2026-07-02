@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.app import create_app
-from backend.auth import AuthenticatedUser
+from backend.auth import AuthenticatedUser, SupabaseTokenVerifier
 from backend.config import Settings
 from backend.storage import build_upload_key, validate_txt_upload
 
@@ -118,6 +118,42 @@ def test_build_upload_key_uses_user_folder_upload_id_and_safe_filename():
         key
         == "users/11111111-1111-4111-8111-111111111111/uploads/22222222-2222-4222-8222-222222222222/My_Book_Draft.txt"
     )
+
+
+def test_supabase_user_endpoint_verifier_accepts_valid_token():
+    class FakeResponse:
+        status_code = 200
+
+        def json(self):
+            return {
+                "id": "11111111-1111-4111-8111-111111111111",
+                "email": "reader@example.com",
+            }
+
+    class FakeHttpClient:
+        def __init__(self):
+            self.request = None
+
+        def get(self, url, headers, timeout):
+            self.request = {"url": url, "headers": headers, "timeout": timeout}
+            return FakeResponse()
+
+    http_client = FakeHttpClient()
+    verifier = SupabaseTokenVerifier(
+        supabase_url="https://example.supabase.co",
+        supabase_anon_key="anon-key",
+        http_client=http_client,
+    )
+
+    user = verifier.verify_authorization_header("Bearer valid-token")
+
+    assert user == AuthenticatedUser(
+        id="11111111-1111-4111-8111-111111111111",
+        email="reader@example.com",
+    )
+    assert http_client.request["url"] == "https://example.supabase.co/auth/v1/user"
+    assert http_client.request["headers"]["apikey"] == "anon-key"
+    assert http_client.request["headers"]["Authorization"] == "Bearer valid-token"
 
 
 def test_process_file_uploads_txt_to_s3_and_saves_metadata():
