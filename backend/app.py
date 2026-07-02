@@ -65,7 +65,7 @@ def create_app(
         return {"ok": True}
 
     @app.get("/config/public")
-    def public_config() -> dict[str, str]:
+    def public_config() -> dict[str, str | None]:
         if not settings.supabase_anon_key:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

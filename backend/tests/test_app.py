@@ -97,6 +97,33 @@ def test_public_config_returns_only_browser_safe_values():
     }
 
 
+def test_public_config_allows_missing_turnstile_site_key():
+    settings = Settings(
+        supabase_url="https://example.supabase.co",
+        supabase_service_role_key="service-role",
+        supabase_anon_key="anon-key",
+        turnstile_site_key=None,
+    )
+    app = create_app(
+        settings=settings,
+        repository=FakeRepository(),
+        object_storage=FakeObjectStorage(),
+        auth_dependency=lambda _authorization: AuthenticatedUser(
+            id="11111111-1111-4111-8111-111111111111",
+            email="reader@example.com",
+        ),
+    )
+
+    response = TestClient(app).get("/config/public")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "supabaseUrl": "https://example.supabase.co",
+        "supabaseAnonKey": "anon-key",
+        "turnstileSiteKey": None,
+    }
+
+
 def test_submit_page_is_served_only_under_submit_path():
     client, _, _ = make_client()
 
