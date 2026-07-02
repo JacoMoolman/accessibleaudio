@@ -133,9 +133,20 @@ if ($remotePath -eq "/") {
 }
 $files = @(
   "index.html",
+  "audiobooks.html",
+  "contact.html",
+  "robots.txt",
+  "sitemap.xml",
+  "favicon.svg",
   "styles.css",
-  "assets/accessible-audio-hero.png"
+  "scripts/video-embeds.js"
 )
+
+$assetFiles = Get-ChildItem -LiteralPath "assets" -Recurse -File |
+  Where-Object { $_.Name -notlike "_ref_*" } |
+  ForEach-Object { $_.FullName.Substring((Resolve-Path -LiteralPath ".").Path.Length + 1) }
+
+$files += $assetFiles
 
 foreach ($file in $files) {
   if (-not (Test-Path -LiteralPath $file)) {

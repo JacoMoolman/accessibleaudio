@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Accessible Audio round logo</title>
+  <desc id="desc">A round Accessible Audio logo with book, sound wave, and four brand color bands.</desc>
+  <defs>
+    <clipPath id="badge-clip">
+      <circle cx="512" cy="512" r="480"/>
+    </clipPath>
+    <clipPath id="band-clip">
+      <circle cx="512" cy="460" r="330"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#badge-clip)">
+    <circle cx="512" cy="512" r="512" fill="#fbf7ee"/>
+
+    <g clip-path="url(#band-clip)">
+      <rect x="182" y="130" width="184" height="620" fill="#126657"/>
+      <rect x="366" y="130" width="146" height="620" fill="#b9812d"/>
+      <rect x="512" y="130" width="146" height="620" fill="#8f3f33"/>
+      <rect x="658" y="130" width="184" height="620" fill="#315a7f"/>
+    </g>
+
+    <path d="M512 704c-74-58-176-82-302-63l48 168c110-20 190-2 254 55 64-57 144-75 254-55l48-168c-126-19-228 5-302 63z" fill="#fbf7ee"/>
+    <path d="M512 704c-74-58-176-82-302-63l48 168c110-20 190-2 254 55 64-57 144-75 254-55l48-168c-126-19-228 5-302 63z" fill="none" stroke="#14201c" stroke-width="34" stroke-linejoin="round"/>
+    <path d="M512 704v160" fill="none" stroke="#14201c" stroke-width="28" stroke-linecap="round"/>
+    <path d="M270 746c88-14 162 1 222 45" fill="none" stroke="#14201c" stroke-width="18" stroke-linecap="round"/>
+    <path d="M754 746c-88-14-162 1-222 45" fill="none" stroke="#14201c" stroke-width="18" stroke-linecap="round"/>
+
+    <circle cx="512" cy="460" r="28" fill="#fbf7ee"/>
+    <path d="M430 392c-38 45-38 91 0 136" fill="none" stroke="#fbf7ee" stroke-width="32" stroke-linecap="round"/>
+    <path d="M594 392c38 45 38 91 0 136" fill="none" stroke="#fbf7ee" stroke-width="32" stroke-linecap="round"/>
+    <path d="M330 320c-70 88-70 192 0 280" fill="none" stroke="#fbf7ee" stroke-width="32" stroke-linecap="round"/>
+    <path d="M694 320c70 88 70 192 0 280" fill="none" stroke="#fbf7ee" stroke-width="32" stroke-linecap="round"/>
+
+    <circle cx="512" cy="512" r="480" fill="none" stroke="#14201c" stroke-width="36"/>
+    <circle cx="512" cy="460" r="330" fill="none" stroke="#14201c" stroke-width="18"/>
+  </g>
+</svg>
