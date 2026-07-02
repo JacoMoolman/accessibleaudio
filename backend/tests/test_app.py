@@ -53,6 +53,7 @@ def make_client():
         supabase_url="https://example.supabase.co",
         supabase_service_role_key="service-role",
         supabase_anon_key="anon-key",
+        turnstile_site_key="turnstile-site-key",
         supabase_jwt_secret="jwt-secret",
         aws_region="us-east-1",
         s3_bucket_name="accessible-audio-submissions",
@@ -92,7 +93,19 @@ def test_public_config_returns_only_browser_safe_values():
     assert response.json() == {
         "supabaseUrl": "https://example.supabase.co",
         "supabaseAnonKey": "anon-key",
+        "turnstileSiteKey": "turnstile-site-key",
     }
+
+
+def test_submit_page_is_served_only_under_submit_path():
+    client, _, _ = make_client()
+
+    root_response = client.get("/")
+    submit_response = client.get("/submit")
+
+    assert root_response.status_code == 404
+    assert submit_response.status_code == 200
+    assert "Submit Audiobook" in submit_response.text
 
 
 def test_validate_txt_upload_rejects_non_txt_filename():

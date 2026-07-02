@@ -13,6 +13,7 @@ class Settings:
     supabase_url: str
     supabase_service_role_key: str
     supabase_anon_key: str | None = None
+    turnstile_site_key: str | None = None
     supabase_jwt_secret: str | None = None
     supabase_jwks_url: str | None = None
     aws_region: str = "us-east-1"
@@ -26,6 +27,7 @@ class Settings:
             supabase_url=_required_env("SUPABASE_URL"),
             supabase_service_role_key=_required_env("SUPABASE_SERVICE_ROLE_KEY"),
             supabase_anon_key=os.getenv("SUPABASE_ANON_KEY"),
+            turnstile_site_key=os.getenv("TURNSTILE_SITE_KEY"),
             supabase_jwt_secret=os.getenv("SUPABASE_JWT_SECRET"),
             supabase_jwks_url=os.getenv("SUPABASE_JWKS_URL"),
             aws_region=os.getenv("AWS_REGION", "us-east-1"),

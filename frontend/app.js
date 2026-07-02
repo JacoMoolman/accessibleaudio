@@ -1,5 +1,8 @@
 let supabaseClient = null;
 let currentSession = null;
+let turnstileSiteKey = null;
+let turnstileWidgetId = null;
+let captchaToken = null;
 
 const authState = document.getElementById("auth-state");
 const uploadPanel = document.getElementById("upload-panel");
@@ -7,11 +10,13 @@ const filesPanel = document.getElementById("files-panel");
 const statusEl = document.getElementById("status");
 const loginButton = document.getElementById("login-button");
 const signupButton = document.getElementById("signup-button");
+const googleButton = document.getElementById("google-button");
 const logoutButton = document.getElementById("logout-button");
 const uploadForm = document.getElementById("upload-form");
 const refreshFilesButton = document.getElementById("refresh-files");
 const translateCheckbox = document.getElementById("translate");
 const translationOptions = document.getElementById("translation-options");
+const captchaSlot = document.getElementById("captcha-slot");
 
 init();
 
@@ -22,6 +27,8 @@ async function init() {
       config.supabaseUrl,
       config.supabaseAnonKey
     );
+    turnstileSiteKey = config.turnstileSiteKey || null;
+    renderCaptchaIfConfigured();
 
     const { data } = await supabaseClient.auth.getSession();
     setSession(data.session);
@@ -36,7 +43,14 @@ async function init() {
 
 loginButton.addEventListener("click", async () => {
   const { email, password } = credentials();
-  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  const options = authOptionsWithCaptcha();
+  if (options === null) return;
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password,
+    ...(options ? { options } : {}),
+  });
+  resetCaptcha();
   if (error) {
     setStatus(error.message, true);
     return;
@@ -46,12 +60,31 @@ loginButton.addEventListener("click", async () => {
 
 signupButton.addEventListener("click", async () => {
   const { email, password } = credentials();
-  const { error } = await supabaseClient.auth.signUp({ email, password });
+  const options = authOptionsWithCaptcha();
+  if (options === null) return;
+  const { error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+    ...(options ? { options } : {}),
+  });
+  resetCaptcha();
   if (error) {
     setStatus(error.message, true);
     return;
   }
   setStatus("Signup started. Check email if confirmation is enabled.");
+});
+
+googleButton.addEventListener("click", async () => {
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}/submit`,
+    },
+  });
+  if (error) {
+    setStatus(error.message, true);
+  }
 });
 
 logoutButton.addEventListener("click", async () => {
@@ -122,6 +155,53 @@ function selectedTranslationLanguages() {
   return Array.from(
     document.querySelectorAll("[name='translation-language']:checked")
   ).map((input) => input.value);
+}
+
+function authOptionsWithCaptcha() {
+  if (!turnstileSiteKey) {
+    return undefined;
+  }
+  if (!captchaToken) {
+    setStatus("Complete the human check first.", true);
+    return null;
+  }
+  return { captchaToken };
+}
+
+function renderCaptchaIfConfigured() {
+  if (!turnstileSiteKey) {
+    captchaSlot.hidden = true;
+    return;
+  }
+  captchaSlot.hidden = false;
+  const renderWhenReady = () => {
+    if (!window.turnstile) {
+      window.setTimeout(renderWhenReady, 100);
+      return;
+    }
+    turnstileWidgetId = window.turnstile.render(captchaSlot, {
+      sitekey: turnstileSiteKey,
+      callback: (token) => {
+        captchaToken = token;
+        setStatus("");
+      },
+      "expired-callback": () => {
+        captchaToken = null;
+      },
+      "error-callback": () => {
+        captchaToken = null;
+        setStatus("Human check failed. Try again.", true);
+      },
+    });
+  };
+  renderWhenReady();
+}
+
+function resetCaptcha() {
+  captchaToken = null;
+  if (window.turnstile && turnstileWidgetId !== null) {
+    window.turnstile.reset(turnstileWidgetId);
+  }
 }
 
 async function setSession(session) {

@@ -31,9 +31,11 @@
             Password
             <input id="password" type="password" autocomplete="current-password" required minlength="6">
           </label>
+          <div class="captcha-slot" id="captcha-slot" hidden></div>
           <div class="actions">
             <button type="button" id="login-button">Log in</button>
             <button type="button" id="signup-button" class="secondary">Sign up</button>
+            <button type="button" id="google-button" class="secondary">Continue with Google</button>
             <button type="button" id="logout-button" class="ghost" hidden>Log out</button>
           </div>
         </form>
@@ -130,6 +132,7 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
     <script src="/app.js"></script>
   </body>
 </html>

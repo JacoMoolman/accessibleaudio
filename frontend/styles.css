@@ -161,6 +161,11 @@ fieldset {
   grid-column: 1 / -1;
 }
 
+.captcha-slot {
+  grid-column: 1 / -1;
+  min-height: 65px;
+}
+
 button {
   border: 0;
   border-radius: 6px;

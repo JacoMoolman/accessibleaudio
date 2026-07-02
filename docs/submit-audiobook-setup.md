@@ -10,9 +10,16 @@ Supabase Postgres.
 2. In SQL Editor, run `supabase/uploaded_files.sql`.
 3. Enable email/password authentication in Supabase Auth.
 4. Add these frontend URLs to Auth redirect/site settings after Render deploy:
-   - `https://accessible-audio-submit.onrender.com`
+   - `https://accessible-audio-submit.onrender.com/submit`
    - `https://accessibleaudio.co.za`
    - `https://www.accessibleaudio.co.za`
+5. To use Google sign-in, configure the Google provider in Supabase Auth.
+   The Google OAuth callback URL is:
+   `https://cphullkbhvpphzslitxv.supabase.co/auth/v1/callback`
+6. To require a human check on email/password auth, create a free Cloudflare
+   Turnstile site, enable CAPTCHA protection in Supabase Auth with the
+   Turnstile secret key, then set the public site key in Render as
+   `TURNSTILE_SITE_KEY`.
 
 ## S3
 
@@ -55,6 +62,7 @@ AWS_SECRET_ACCESS_KEY
 AWS_REGION=us-east-1
 S3_BUCKET_NAME=accessible-audio-submissions
 MAX_UPLOAD_BYTES=10485760
+TURNSTILE_SITE_KEY=
 ALLOWED_ORIGINS=https://accessibleaudio.co.za,https://www.accessibleaudio.co.za,https://accessible-audio-submit.onrender.com
 ```
 
@@ -82,5 +90,5 @@ uvicorn backend.main:app --reload
 Open:
 
 ```text
-http://127.0.0.1:8000
+http://127.0.0.1:8000/submit
 ```

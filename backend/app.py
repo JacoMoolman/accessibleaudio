@@ -74,6 +74,7 @@ def create_app(
         return {
             "supabaseUrl": settings.supabase_url,
             "supabaseAnonKey": settings.supabase_anon_key,
+            "turnstileSiteKey": settings.turnstile_site_key,
         }
 
     @app.post("/process-file", status_code=status.HTTP_201_CREATED)
@@ -138,8 +139,8 @@ def create_app(
         if assets_dir.exists():
             app.mount("/assets", StaticFiles(directory=assets_dir), name="frontend-assets")
 
-        @app.get("/")
-        def index() -> FileResponse:
+        @app.get("/submit")
+        def submit() -> FileResponse:
             return FileResponse(frontend_dir / "index.html")
 
         @app.get("/app.js")
