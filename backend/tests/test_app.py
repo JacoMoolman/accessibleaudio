@@ -153,6 +153,8 @@ def test_frontend_hides_all_login_controls_when_logged_in():
     assert response.status_code == 200
     assert "authControls.hidden = loggedIn" in response.text
     assert "googleButton.hidden = loggedIn" in response.text
+    assert 'hideWhenLoggedIn(emailInput?.closest("label"), loggedIn)' in response.text
+    assert 'hideWhenLoggedIn(passwordInput?.closest("label"), loggedIn)' in response.text
 
 
 def test_frontend_responses_disable_browser_cache():

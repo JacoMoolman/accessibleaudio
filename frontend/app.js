@@ -6,6 +6,8 @@ let captchaToken = null;
 
 const authState = document.getElementById("auth-state");
 const authControls = document.getElementById("auth-controls");
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
 const uploadPanel = document.getElementById("upload-panel");
 const filesPanel = document.getElementById("files-panel");
 const statusEl = document.getElementById("status");
@@ -209,7 +211,12 @@ async function setSession(session) {
   const loggedIn = Boolean(session?.user);
   uploadPanel.hidden = !loggedIn;
   filesPanel.hidden = !loggedIn;
-  authControls.hidden = loggedIn;
+  if (authControls) {
+    authControls.hidden = loggedIn;
+  }
+  hideWhenLoggedIn(emailInput?.closest("label"), loggedIn);
+  hideWhenLoggedIn(passwordInput?.closest("label"), loggedIn);
+  hideWhenLoggedIn(captchaSlot, loggedIn);
   logoutButton.hidden = !loggedIn;
   loginButton.hidden = loggedIn;
   signupButton.hidden = loggedIn;
@@ -219,6 +226,12 @@ async function setSession(session) {
     : "Sign up or log in to upload a book.";
   if (loggedIn) {
     await loadFiles();
+  }
+}
+
+function hideWhenLoggedIn(element, loggedIn) {
+  if (element) {
+    element.hidden = loggedIn;
   }
 }
 
