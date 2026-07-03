@@ -260,6 +260,40 @@ def test_process_file_uploads_txt_to_s3_and_saves_metadata():
     assert storage.uploads[0]["content_type"] == "text/plain; charset=utf-8"
 
 
+def test_process_file_uploads_options_text_file_next_to_book():
+    client, _, storage = make_client()
+
+    response = client.post(
+        "/process-file",
+        headers={"Authorization": "Bearer valid-token"},
+        files={"file": ("Peter Pan.txt", io.BytesIO(b"Chapter 1\nHello"), "text/plain")},
+        data={
+            "narrator_voice": "English Female",
+            "output_format": "mp3",
+            "also_wav": "true",
+            "translate": "true",
+            "translation_languages": "Afrikaans,Zulu",
+            "make_video": "true",
+        },
+    )
+
+    assert response.status_code == 201
+    book_upload, options_upload = storage.uploads
+    assert book_upload["key"].endswith("/Peter_Pan.txt")
+    assert options_upload["key"] == book_upload["key"].rsplit("/", 1)[0] + "/options.txt"
+    assert options_upload["content_type"] == "text/plain; charset=utf-8"
+    options_text = options_upload["content"].decode("utf-8")
+    assert "filename: Peter Pan.txt" in options_text
+    assert "narrator_voice: English Female" in options_text
+    assert "output_format: mp3" in options_text
+    assert "also_wav: true" in options_text
+    assert "translate: true" in options_text
+    assert "translation_languages: Afrikaans, Zulu" in options_text
+    assert "translation_voice_Afrikaans: Afrikaans voice" in options_text
+    assert "translation_voice_Zulu: Zulu voice" in options_text
+    assert "make_video: true" in options_text
+
+
 def test_files_endpoint_returns_only_authenticated_users_records():
     client, repo, _ = make_client()
     repo.created.append(

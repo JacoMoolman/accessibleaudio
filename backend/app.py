@@ -101,6 +101,24 @@ def create_app(
             key=key,
             content_type="text/plain; charset=utf-8",
         )
+        parsed_translation_languages = _parse_translation_languages(translation_languages)
+        object_storage.upload_bytes(
+            content=_build_options_text(
+                upload_id=upload_id,
+                user_id=user.id,
+                filename=file.filename or "upload.txt",
+                book_s3_bucket=bucket,
+                book_s3_key=key,
+                narrator_voice=narrator_voice,
+                output_format=output_format,
+                also_wav=also_wav,
+                translate=translate,
+                translation_languages=parsed_translation_languages,
+                make_video=make_video,
+            ).encode("utf-8"),
+            key=_options_key_for_upload(key),
+            content_type="text/plain; charset=utf-8",
+        )
         record = {
             "id": str(upload_id),
             "user_id": user.id,
@@ -112,7 +130,7 @@ def create_app(
             "output_format": output_format,
             "also_wav": also_wav,
             "translate": translate,
-            "translation_languages": _parse_translation_languages(translation_languages),
+            "translation_languages": parsed_translation_languages,
             "make_video": make_video,
         }
         return repository.create_uploaded_file(record)
@@ -165,6 +183,53 @@ def _parse_translation_languages(value: str) -> list[str]:
         parsed = json.loads(value)
         return [str(item).strip() for item in parsed if str(item).strip()]
     return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _options_key_for_upload(book_key: str) -> str:
+    return f"{book_key.rsplit('/', 1)[0]}/options.txt"
+
+
+def _build_options_text(
+    *,
+    upload_id: uuid.UUID,
+    user_id: str,
+    filename: str,
+    book_s3_bucket: str,
+    book_s3_key: str,
+    narrator_voice: str,
+    output_format: str,
+    also_wav: bool,
+    translate: bool,
+    translation_languages: list[str],
+    make_video: bool,
+) -> str:
+    lines = [
+        "Accessible Audio upload options",
+        f"upload_id: {upload_id}",
+        f"user_id: {user_id}",
+        f"filename: {filename}",
+        f"book_s3_bucket: {book_s3_bucket}",
+        f"book_s3_key: {book_s3_key}",
+        f"narrator_voice: {narrator_voice.strip() or 'not selected'}",
+        f"output_format: {output_format}",
+        f"also_wav: {_bool_text(also_wav)}",
+        f"translate: {_bool_text(translate)}",
+        f"translation_languages: {', '.join(translation_languages) if translation_languages else 'none'}",
+    ]
+    if translate:
+        for language in translation_languages:
+            lines.append(f"translation_voice_{language}: {language} voice")
+    lines.extend(
+        [
+            f"make_video: {_bool_text(make_video)}",
+            "video_plan: one image per chapter" if make_video else "video_plan: none",
+        ]
+    )
+    return "\n".join(lines) + "\n"
+
+
+def _bool_text(value: bool) -> str:
+    return "true" if value else "false"
 
 
 def _frontend_dir():
