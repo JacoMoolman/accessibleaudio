@@ -135,6 +135,26 @@ def test_submit_page_is_served_only_under_submit_path():
     assert "Submit Audiobook" in submit_response.text
 
 
+def test_submit_page_does_not_render_language_placeholder():
+    client, _, _ = make_client()
+
+    response = client.get("/submit")
+
+    assert response.status_code == 200
+    assert "Pending manual review" not in response.text
+    assert "Detected language" not in response.text
+
+
+def test_frontend_hides_all_login_controls_when_logged_in():
+    client, _, _ = make_client()
+
+    response = client.get("/app.js")
+
+    assert response.status_code == 200
+    assert "authControls.hidden = loggedIn" in response.text
+    assert "googleButton.hidden = loggedIn" in response.text
+
+
 def test_validate_txt_upload_rejects_non_txt_filename():
     with pytest.raises(ValueError, match="Only .txt files are accepted"):
         validate_txt_upload("novel.pdf", b"hello")

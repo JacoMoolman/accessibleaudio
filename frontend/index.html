@@ -22,20 +22,24 @@
           <h2>Account</h2>
           <p id="auth-state">Sign up or log in to upload a book.</p>
         </div>
-        <form id="auth-form" class="grid-form">
-          <label>
-            Email
-            <input id="email" type="email" autocomplete="email" required>
-          </label>
-          <label>
-            Password
-            <input id="password" type="password" autocomplete="current-password" required minlength="6">
-          </label>
-          <div class="captcha-slot" id="captcha-slot" hidden></div>
+        <form id="auth-form">
+          <div class="auth-controls grid-form" id="auth-controls">
+            <label>
+              Email
+              <input id="email" type="email" autocomplete="email" required>
+            </label>
+            <label>
+              Password
+              <input id="password" type="password" autocomplete="current-password" required minlength="6">
+            </label>
+            <div class="captcha-slot" id="captcha-slot" hidden></div>
+            <div class="actions">
+              <button type="button" id="login-button">Log in</button>
+              <button type="button" id="signup-button" class="secondary">Sign up</button>
+              <button type="button" id="google-button" class="secondary">Continue with Google</button>
+            </div>
+          </div>
           <div class="actions">
-            <button type="button" id="login-button">Log in</button>
-            <button type="button" id="signup-button" class="secondary">Sign up</button>
-            <button type="button" id="google-button" class="secondary">Continue with Google</button>
             <button type="button" id="logout-button" class="ghost" hidden>Log out</button>
           </div>
         </form>
@@ -108,11 +112,6 @@
             </label>
             <p class="field-note">For now: one image per chapter. This is saved as a request only.</p>
           </fieldset>
-
-          <div class="detected-language" id="detected-language" hidden>
-            Detected language: <strong id="detected-language-value">Pending manual review</strong>
-            <button type="button" class="link-button" disabled>Change</button>
-          </div>
 
           <div class="actions">
             <button type="submit">Upload TXT</button>

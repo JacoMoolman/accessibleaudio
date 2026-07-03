@@ -187,17 +187,10 @@ button.secondary {
   color: var(--primary-strong);
 }
 
-button.ghost,
-.link-button {
+button.ghost {
   background: transparent;
   color: var(--primary);
   padding-inline: 0;
-}
-
-.detected-language {
-  border-left: 4px solid var(--focus);
-  background: #fbf7ee;
-  padding: 12px 14px;
 }
 
 .files-list {

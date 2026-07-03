@@ -5,6 +5,7 @@ let turnstileWidgetId = null;
 let captchaToken = null;
 
 const authState = document.getElementById("auth-state");
+const authControls = document.getElementById("auth-controls");
 const uploadPanel = document.getElementById("upload-panel");
 const filesPanel = document.getElementById("files-panel");
 const statusEl = document.getElementById("status");
@@ -132,7 +133,6 @@ uploadForm.addEventListener("submit", async (event) => {
       },
       body: formData,
     });
-    document.getElementById("detected-language").hidden = false;
     uploadForm.reset();
     translationOptions.hidden = true;
     setStatus("Uploaded. Status is saved as uploaded for manual processing.");
@@ -209,9 +209,11 @@ async function setSession(session) {
   const loggedIn = Boolean(session?.user);
   uploadPanel.hidden = !loggedIn;
   filesPanel.hidden = !loggedIn;
+  authControls.hidden = loggedIn;
   logoutButton.hidden = !loggedIn;
   loginButton.hidden = loggedIn;
   signupButton.hidden = loggedIn;
+  googleButton.hidden = loggedIn;
   authState.textContent = loggedIn
     ? `Logged in as ${session.user.email || session.user.id}`
     : "Sign up or log in to upload a book.";
