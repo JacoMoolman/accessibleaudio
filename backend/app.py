@@ -141,15 +141,18 @@ def create_app(
 
         @app.get("/submit")
         def submit() -> FileResponse:
-            return FileResponse(frontend_dir / "index.html")
+            return _frontend_response(frontend_dir / "index.html")
 
         @app.get("/app.js")
         def app_js() -> FileResponse:
-            return FileResponse(frontend_dir / "app.js", media_type="application/javascript")
+            return _frontend_response(
+                frontend_dir / "app.js",
+                media_type="application/javascript",
+            )
 
         @app.get("/styles.css")
         def frontend_css() -> FileResponse:
-            return FileResponse(frontend_dir / "styles.css", media_type="text/css")
+            return _frontend_response(frontend_dir / "styles.css", media_type="text/css")
 
     return app
 
@@ -168,3 +171,11 @@ def _frontend_dir():
     from pathlib import Path
 
     return Path(__file__).resolve().parents[1] / "frontend"
+
+
+def _frontend_response(path, media_type: str | None = None) -> FileResponse:
+    return FileResponse(
+        path,
+        media_type=media_type,
+        headers={"Cache-Control": "no-store"},
+    )

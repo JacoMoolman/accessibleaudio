@@ -155,6 +155,16 @@ def test_frontend_hides_all_login_controls_when_logged_in():
     assert "googleButton.hidden = loggedIn" in response.text
 
 
+def test_frontend_responses_disable_browser_cache():
+    client, _, _ = make_client()
+
+    for path in ("/submit", "/app.js", "/styles.css"):
+        response = client.get(path)
+
+        assert response.status_code == 200
+        assert response.headers["cache-control"] == "no-store"
+
+
 def test_validate_txt_upload_rejects_non_txt_filename():
     with pytest.raises(ValueError, match="Only .txt files are accepted"):
         validate_txt_upload("novel.pdf", b"hello")
