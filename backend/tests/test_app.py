@@ -219,6 +219,10 @@ def test_analyze_file_detects_language_and_chapter_titles():
             {"index": 2, "title": "CHAPTER TWO"},
         ],
         "chapter_count": 2,
+        "word_count": 12,
+        "cost_per_word_cents": 1,
+        "estimated_cost_cents": 12,
+        "estimated_cost_zar": "R 0.12",
     }
 
 
@@ -268,6 +272,16 @@ def test_frontend_analyzes_file_before_unlocking_options():
     assert "setProductionOptionsEnabled(Boolean(fileAnalysis))" in response.text
     assert "playVoiceSample" in response.text
     assert "selectedTranslationVoices" in response.text
+
+
+def test_frontend_displays_analysis_cost_estimate():
+    client, _, _ = make_client()
+
+    response = client.get("/app.js")
+
+    assert response.status_code == 200
+    assert "estimated_cost_zar" in response.text
+    assert "Estimated cost" in response.text
 
 
 def test_frontend_attempts_direct_test_login_before_supabase_auth():

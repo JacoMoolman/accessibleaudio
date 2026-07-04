@@ -20,6 +20,7 @@ from backend.storage import (
 )
 
 AuthDependency = Callable[[str | None], Awaitable[AuthenticatedUser]]
+BOOK_COST_PER_WORD_CENTS = 1
 
 
 def create_app(
@@ -193,10 +194,16 @@ def create_app(
 
         text = _decode_upload_text(content)
         chapters = _detect_chapters(text)
+        word_count = _count_words(text)
+        estimated_cost_cents = word_count * BOOK_COST_PER_WORD_CENTS
         return {
             "source_language": _detect_source_language(text),
             "chapters": chapters,
             "chapter_count": len(chapters),
+            "word_count": word_count,
+            "cost_per_word_cents": BOOK_COST_PER_WORD_CENTS,
+            "estimated_cost_cents": estimated_cost_cents,
+            "estimated_cost_zar": _format_zar_cents(estimated_cost_cents),
         }
 
     @app.get("/files")
@@ -455,6 +462,14 @@ def _detect_source_language(text: str) -> str:
     }
     language, score = max(scores.items(), key=lambda item: item[1])
     return language if score else "Unknown"
+
+
+def _count_words(text: str) -> int:
+    return len(re.findall(r"[A-Za-z\u00C0-\u00FF]+", text.lower()))
+
+
+def _format_zar_cents(cents: int) -> str:
+    return f"R {cents // 100}.{cents % 100:02d}"
 
 
 def _frontend_dir():

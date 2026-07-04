@@ -265,7 +265,9 @@ function renderAnalysisResult(message = "", isError = false) {
     return;
   }
 
-  analysisResult.textContent = `${fileAnalysis.source_language || "Unknown"} detected, ${fileAnalysis.chapter_count} chapter${fileAnalysis.chapter_count === 1 ? "" : "s"} found.`;
+  const estimatedCost = fileAnalysis.estimated_cost_zar || "R 0.00";
+  const wordCount = Number(fileAnalysis.word_count || 0).toLocaleString();
+  analysisResult.textContent = `${fileAnalysis.source_language || "Unknown"} detected, ${fileAnalysis.chapter_count} chapter${fileAnalysis.chapter_count === 1 ? "" : "s"} found. Estimated cost: ${estimatedCost} (${wordCount} words at 1c/word).`;
   analysisResult.classList.remove("error");
   chapterList.innerHTML = fileAnalysis.chapters
     .map((chapter) => `<li>${escapeHtml(chapter.title)}</li>`)
