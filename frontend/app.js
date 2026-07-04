@@ -25,7 +25,16 @@ const analysisResult = document.getElementById("analysis-result");
 const chapterList = document.getElementById("chapter-list");
 const playNarratorSampleButton = document.getElementById("play-narrator-sample");
 const captchaSlot = document.getElementById("captcha-slot");
+const VOICE_SAMPLE_URLS = {
+  "English Female": "/assets/voice-samples/english-female.wav",
+  "English Male": "/assets/voice-samples/english-male.mp3",
+  "Afrikaans Male": "/assets/voice-samples/afrikaans-male.mp3",
+  "Zulu Female": "/assets/voice-samples/zulu-female.wav",
+  "Zulu Male": "/assets/voice-samples/zulu-male.mp3",
+  "Xhosa Male": "/assets/voice-samples/xhosa-male.wav",
+};
 let fileAnalysis = null;
+let currentVoiceSampleAudio = null;
 
 init();
 
@@ -283,36 +292,27 @@ function playVoiceSample(voiceName) {
     setStatus("Choose a narrator voice first.", true);
     return;
   }
-  if (!("speechSynthesis" in window)) {
-    setStatus("Voice samples are not supported in this browser.", true);
+  const sampleUrl = VOICE_SAMPLE_URLS[voiceName];
+  if (!sampleUrl) {
+    setStatus(`No sample file is configured for ${voiceName}.`, true);
     return;
   }
 
-  const utterance = new SpeechSynthesisUtterance(sampleTextForVoice(voiceName));
-  utterance.lang = languageCodeForVoice(voiceName);
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utterance);
+  if (currentVoiceSampleAudio) {
+    currentVoiceSampleAudio.pause();
+    currentVoiceSampleAudio.currentTime = 0;
+  }
+  currentVoiceSampleAudio = new Audio(sampleUrl);
+  currentVoiceSampleAudio.addEventListener("error", () => {
+    setStatus(`Could not play the ${voiceName} sample file.`, true);
+  });
+  const playPromise = currentVoiceSampleAudio.play();
+  if (playPromise) {
+    playPromise.catch(() => {
+      setStatus(`Could not play the ${voiceName} sample file.`, true);
+    });
+  }
   setStatus(`Playing sample for ${voiceName}.`);
-}
-
-function sampleTextForVoice(voiceName) {
-  if (voiceName.includes("Zulu")) {
-    return "Sawubona. Lesi yisampula yezwi lencwadi elizwakala ngokucacile.";
-  }
-  if (voiceName.includes("Xhosa")) {
-    return "Molo. Le yisampulu yelizwi lencwadi evakala ngokucacileyo.";
-  }
-  if (voiceName.includes("Afrikaans")) {
-    return "Hallo. Hierdie is 'n kort stemvoorbeeld vir die oudioboek.";
-  }
-  return "Hello. This is a short narrator voice sample for the audiobook.";
-}
-
-function languageCodeForVoice(voiceName) {
-  if (voiceName.includes("Zulu")) return "zu-ZA";
-  if (voiceName.includes("Xhosa")) return "xh-ZA";
-  if (voiceName.includes("Afrikaans")) return "af-ZA";
-  return "en-ZA";
 }
 
 function cssEscape(value) {

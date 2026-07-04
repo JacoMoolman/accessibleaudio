@@ -1,6 +1,7 @@
 import io
 import json
 import uuid
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -314,6 +315,36 @@ def test_frontend_analyzes_file_before_unlocking_options():
     assert "setProductionOptionsEnabled(Boolean(fileAnalysis))" in response.text
     assert "playVoiceSample" in response.text
     assert "selectedTranslationVoices" in response.text
+
+
+def test_frontend_uses_real_voice_sample_audio_files():
+    client, _, _ = make_client()
+
+    response = client.get("/app.js")
+
+    assert response.status_code == 200
+    assert "VOICE_SAMPLE_URLS" in response.text
+    assert "new Audio(sampleUrl)" in response.text
+    assert "speechSynthesis" not in response.text
+    assert "SpeechSynthesisUtterance" not in response.text
+
+
+def test_real_voice_sample_assets_exist():
+    voice_sample_dir = Path(__file__).resolve().parents[2] / "frontend" / "assets" / "voice-samples"
+
+    expected_samples = {
+        "english-female.wav",
+        "english-male.mp3",
+        "afrikaans-male.mp3",
+        "zulu-female.wav",
+        "zulu-male.mp3",
+        "xhosa-male.wav",
+    }
+
+    for filename in expected_samples:
+        sample = voice_sample_dir / filename
+        assert sample.exists(), filename
+        assert sample.stat().st_size > 100_000, filename
 
 
 def test_frontend_displays_analysis_cost_estimate():
