@@ -193,6 +193,20 @@ def test_frontend_css_preserves_hidden_controls():
     assert "display: none !important" in response.text
 
 
+def test_frontend_css_uses_dark_submit_page_backgrounds():
+    client, _, _ = make_client()
+
+    response = client.get("/styles.css")
+
+    assert response.status_code == 200
+    assert "html {\n  color: var(--ink);\n  background: #062c27;" in response.text
+    assert "body {\n  margin: 0;\n  min-height: 100vh;\n  color: var(--ink);" in response.text
+    assert "background: #062c27;" in response.text
+    assert ".submit-section {\n  --submit-ink: #fffaf1;" in response.text
+    assert "background: #062c27;" in response.text
+    assert "--submit-panel: rgba(6, 32, 28, 0.92);" in response.text
+
+
 def test_frontend_css_keeps_submit_text_side_by_side_until_tablet():
     client, _, _ = make_client()
 
