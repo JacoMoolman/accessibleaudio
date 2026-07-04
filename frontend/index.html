@@ -88,60 +88,108 @@
                 <input id="book-file" type="file" accept=".txt,text/plain" required>
               </label>
 
-              <label>
-                Narrator voice for original language
-                <select id="narrator-voice" required>
-                  <option value="">Select voice</option>
-                  <option>English Female</option>
-                  <option>English Male</option>
-                  <option>Afrikaans Male</option>
-                  <option>Zulu Female</option>
-                  <option>Zulu Male</option>
-                  <option>Xhosa Male</option>
-                </select>
-              </label>
-
-              <fieldset>
-                <legend>Output Format</legend>
-                <label class="inline">
-                  <input type="radio" name="output-format" value="mp3" checked>
-                  MP3
-                </label>
-                <label class="inline">
-                  <input id="also-wav" type="checkbox">
-                  Also create WAV
-                </label>
-              </fieldset>
-
-              <fieldset>
-                <legend>Translation</legend>
-                <label class="inline">
-                  <input id="translate" type="checkbox">
-                  Translate this book
-                </label>
-                <div id="translation-options" class="option-grid" hidden>
-                  <label class="inline">
-                    <input type="checkbox" name="translation-language" value="Afrikaans">
-                    Afrikaans -> Afrikaans voice
-                  </label>
-                  <label class="inline">
-                    <input type="checkbox" name="translation-language" value="Zulu">
-                    Zulu -> Zulu voice
-                  </label>
-                  <label class="inline">
-                    <input type="checkbox" name="translation-language" value="English">
-                    English -> English voice
-                  </label>
+              <section class="analysis-panel" id="analysis-panel" aria-live="polite">
+                <div class="analysis-state" id="analysis-result">
+                  Choose a TXT file to detect the source language and chapters.
                 </div>
-              </fieldset>
+                <ul class="chapter-list" id="chapter-list"></ul>
+              </section>
 
-              <fieldset>
-                <legend>Video</legend>
-                <label class="inline">
-                  <input id="make-video" type="checkbox">
-                  Make video
+              <input id="source-language" name="source_language" type="hidden">
+              <input id="chapter-titles" name="chapter_titles" type="hidden">
+
+              <fieldset id="production-options" class="production-options" disabled data-requires-analysis>
+                <label>
+                  Narrator voice for original language
+                  <div class="select-action">
+                    <select id="narrator-voice" required>
+                      <option value="">Select voice</option>
+                      <option>English Female</option>
+                      <option>English Male</option>
+                      <option>Afrikaans Male</option>
+                      <option>Zulu Female</option>
+                      <option>Zulu Male</option>
+                      <option>Xhosa Male</option>
+                    </select>
+                    <button type="button" class="secondary" id="play-narrator-sample">Play sample</button>
+                  </div>
                 </label>
-                <p class="field-note">For now: one image per chapter. This is saved as a request only.</p>
+
+                <fieldset>
+                  <legend>Output Format</legend>
+                  <label class="inline">
+                    <input type="radio" name="output-format" value="mp3" checked>
+                    MP3
+                  </label>
+                  <label class="inline">
+                    <input id="also-wav" type="checkbox">
+                    Also create WAV
+                  </label>
+                </fieldset>
+
+                <fieldset>
+                  <legend>Translation</legend>
+                  <label class="inline">
+                    <input id="translate" type="checkbox">
+                    Translate this book
+                  </label>
+                  <div id="translation-options" class="option-grid" hidden>
+                    <label>
+                      <span class="inline">
+                        <input type="checkbox" name="translation-language" value="Afrikaans">
+                        Afrikaans
+                      </span>
+                      <select name="translation-voice-Afrikaans" aria-label="Afrikaans translation voice">
+                        <option>Afrikaans Male</option>
+                        <option>English Female</option>
+                        <option>English Male</option>
+                        <option>Zulu Female</option>
+                        <option>Zulu Male</option>
+                        <option>Xhosa Male</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span class="inline">
+                        <input type="checkbox" name="translation-language" value="Zulu">
+                        Zulu
+                      </span>
+                      <select name="translation-voice-Zulu" aria-label="Zulu translation voice">
+                        <option>Zulu Female</option>
+                        <option>Zulu Male</option>
+                        <option>English Female</option>
+                        <option>English Male</option>
+                        <option>Afrikaans Male</option>
+                        <option>Xhosa Male</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span class="inline">
+                        <input type="checkbox" name="translation-language" value="English">
+                        English
+                      </span>
+                      <select name="translation-voice-English" aria-label="English translation voice">
+                        <option>English Female</option>
+                        <option>English Male</option>
+                        <option>Afrikaans Male</option>
+                        <option>Zulu Female</option>
+                        <option>Zulu Male</option>
+                        <option>Xhosa Male</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div id="translation-voice-options" class="field-note">
+                    Translation voice choices are saved separately from the original narrator.
+                  </div>
+                </fieldset>
+
+                <fieldset>
+                  <legend>Video</legend>
+                  <label class="inline">
+                    <input id="make-video" type="checkbox">
+                    Make video
+                  </label>
+                  <p class="field-note">For now: one image per chapter. This is saved as a request only.</p>
+                </fieldset>
               </fieldset>
 
               <div class="actions">

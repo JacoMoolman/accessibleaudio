@@ -20,6 +20,9 @@ class Settings:
     s3_bucket_name: str = "accessible-audio-submissions"
     allowed_origins: list[str] = field(default_factory=list)
     max_upload_bytes: int = 10 * 1024 * 1024
+    test_login_email: str = "momstats-test@accessibleaudio.local"
+    test_login_password: str = "momstats-test-2026-07-04"
+    test_login_user_id: str = "00000000-0000-4000-8000-000000000006"
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -34,6 +37,15 @@ class Settings:
             s3_bucket_name=os.getenv("S3_BUCKET_NAME", "accessible-audio-submissions"),
             allowed_origins=_split_csv(os.getenv("ALLOWED_ORIGINS")),
             max_upload_bytes=int(os.getenv("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024))),
+            test_login_email=os.getenv(
+                "TEST_LOGIN_EMAIL", "momstats-test@accessibleaudio.local"
+            ),
+            test_login_password=os.getenv(
+                "TEST_LOGIN_PASSWORD", "momstats-test-2026-07-04"
+            ),
+            test_login_user_id=os.getenv(
+                "TEST_LOGIN_USER_ID", "00000000-0000-4000-8000-000000000006"
+            ),
         )
 
 

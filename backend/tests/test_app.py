@@ -1,4 +1,5 @@
 import io
+import json
 import uuid
 
 import pytest
@@ -192,6 +193,158 @@ def test_frontend_css_preserves_hidden_controls():
     assert "display: none !important" in response.text
 
 
+def test_analyze_file_detects_language_and_chapter_titles():
+    client, _, _ = make_client()
+
+    response = client.post(
+        "/analyze-file",
+        headers={"Authorization": "Bearer valid-token"},
+        files={
+            "file": (
+                "Book One.txt",
+                io.BytesIO(
+                    b"Chapter One\nDown the rabbit-hole.\n\n"
+                    b"CHAPTER TWO\nThe pool of tears."
+                ),
+                "text/plain",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "source_language": "English",
+        "chapters": [
+            {"index": 1, "title": "Chapter One"},
+            {"index": 2, "title": "CHAPTER TWO"},
+        ],
+        "chapter_count": 2,
+    }
+
+
+def test_submit_page_requires_file_analysis_before_options():
+    client, _, _ = make_client()
+
+    response = client.get("/submit")
+
+    assert response.status_code == 200
+    assert 'id="analysis-panel"' in response.text
+    assert 'id="analysis-result"' in response.text
+    assert 'id="production-options"' in response.text
+    assert 'disabled data-requires-analysis' in response.text
+
+
+def test_submit_page_has_voice_sample_and_translation_voice_controls():
+    client, _, _ = make_client()
+
+    response = client.get("/submit")
+
+    assert response.status_code == 200
+    assert 'id="play-narrator-sample"' in response.text
+    assert 'id="translation-voice-options"' in response.text
+    assert 'name="translation-voice-Afrikaans"' in response.text
+    assert 'name="translation-voice-Zulu"' in response.text
+    assert 'name="translation-voice-English"' in response.text
+
+
+def test_frontend_analyzes_file_before_unlocking_options():
+    client, _, _ = make_client()
+
+    response = client.get("/app.js")
+
+    assert response.status_code == 200
+    assert "analyzeSelectedFile" in response.text
+    assert "setProductionOptionsEnabled(Boolean(fileAnalysis))" in response.text
+    assert "playVoiceSample" in response.text
+    assert "selectedTranslationVoices" in response.text
+
+
+def test_frontend_attempts_direct_test_login_before_supabase_auth():
+    client, _, _ = make_client()
+
+    response = client.get("/app.js")
+
+    assert response.status_code == 200
+    assert 'fetchJson("/test-login"' in response.text
+    assert "const testSession = await tryTestLogin(email, password)" in response.text
+    assert "setSession(testSession)" in response.text
+
+
+def test_test_login_rejects_wrong_password():
+    client, _, _ = make_client()
+
+    response = client.post(
+        "/test-login",
+        json={
+            "email": "momstats-test@accessibleaudio.local",
+            "password": "wrong",
+        },
+    )
+
+    assert response.status_code == 401
+
+
+def test_test_login_token_uploads_without_supabase_confirmation():
+    settings = Settings(
+        supabase_url="https://example.supabase.co",
+        supabase_service_role_key="service-role",
+        supabase_anon_key="anon-key",
+        turnstile_site_key=None,
+    )
+    storage = FakeObjectStorage()
+    app = create_app(
+        settings=settings,
+        repository=FakeRepository(),
+        object_storage=storage,
+    )
+    client = TestClient(app)
+
+    login_response = client.post(
+        "/test-login",
+        json={
+            "email": "momstats-test@accessibleaudio.local",
+            "password": "momstats-test-2026-07-04",
+        },
+    )
+    assert login_response.status_code == 200
+    token = login_response.json()["access_token"]
+
+    response = client.post(
+        "/process-file",
+        headers={"Authorization": f"Bearer {token}"},
+        files={
+            "file": (
+                "momstats-live-test.txt",
+                io.BytesIO(b"Chapter 1\nLive test upload."),
+                "text/plain",
+            )
+        },
+        data={
+            "narrator_voice": "English Female",
+            "output_format": "mp3",
+            "also_wav": "false",
+            "translate": "false",
+            "translation_languages": "",
+            "source_language": "English",
+            "chapter_titles": json.dumps(["Chapter 1"]),
+            "make_video": "false",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["user_id"] == "00000000-0000-4000-8000-000000000006"
+    assert body["filename"] == "momstats-live-test.txt"
+    assert body["status"] == "uploaded"
+    assert len(storage.uploads) == 2
+
+    files_response = client.get("/files", headers={"Authorization": f"Bearer {token}"})
+    assert files_response.status_code == 200
+    assert [item["filename"] for item in files_response.json()] == [
+        "momstats-live-test.txt"
+    ]
+
+
 def test_validate_txt_upload_rejects_non_txt_filename():
     with pytest.raises(ValueError, match="Only .txt files are accepted"):
         validate_txt_upload("novel.pdf", b"hello")
@@ -298,6 +451,11 @@ def test_process_file_uploads_options_text_file_next_to_book():
             "also_wav": "true",
             "translate": "true",
             "translation_languages": "Afrikaans,Zulu",
+            "translation_voices": json.dumps(
+                {"Afrikaans": "Afrikaans Male", "Zulu": "Zulu Female"}
+            ),
+            "source_language": "English",
+            "chapter_titles": json.dumps(["Chapter One", "CHAPTER TWO"]),
             "make_video": "true",
         },
     )
@@ -312,11 +470,38 @@ def test_process_file_uploads_options_text_file_next_to_book():
     assert "narrator_voice: English Female" in options_text
     assert "output_format: mp3" in options_text
     assert "also_wav: true" in options_text
+    assert "source_language: English" in options_text
+    assert "detected_chapter_count: 2" in options_text
+    assert "chapter_1_title: Chapter One" in options_text
+    assert "chapter_2_title: CHAPTER TWO" in options_text
     assert "translate: true" in options_text
     assert "translation_languages: Afrikaans, Zulu" in options_text
-    assert "translation_voice_Afrikaans: Afrikaans voice" in options_text
-    assert "translation_voice_Zulu: Zulu voice" in options_text
+    assert "translation_voice_Afrikaans: Afrikaans Male" in options_text
+    assert "translation_voice_Zulu: Zulu Female" in options_text
     assert "make_video: true" in options_text
+
+
+def test_process_file_saves_source_language_metadata():
+    client, repo, _ = make_client()
+
+    response = client.post(
+        "/process-file",
+        headers={"Authorization": "Bearer valid-token"},
+        files={"file": ("Book One.txt", io.BytesIO(b"Chapter 1\nHello"), "text/plain")},
+        data={
+            "narrator_voice": "Zulu Female",
+            "output_format": "mp3",
+            "also_wav": "false",
+            "translate": "false",
+            "translation_languages": "",
+            "source_language": "English",
+            "chapter_titles": json.dumps(["Chapter 1"]),
+            "make_video": "false",
+        },
+    )
+
+    assert response.status_code == 201
+    assert repo.created[0]["source_language"] == "English"
 
 
 def test_files_endpoint_returns_only_authenticated_users_records():

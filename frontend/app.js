@@ -16,10 +16,16 @@ const signupButton = document.getElementById("signup-button");
 const googleButton = document.getElementById("google-button");
 const logoutButton = document.getElementById("logout-button");
 const uploadForm = document.getElementById("upload-form");
+const fileInput = document.getElementById("book-file");
 const refreshFilesButton = document.getElementById("refresh-files");
 const translateCheckbox = document.getElementById("translate");
 const translationOptions = document.getElementById("translation-options");
+const productionOptions = document.getElementById("production-options");
+const analysisResult = document.getElementById("analysis-result");
+const chapterList = document.getElementById("chapter-list");
+const playNarratorSampleButton = document.getElementById("play-narrator-sample");
 const captchaSlot = document.getElementById("captcha-slot");
+let fileAnalysis = null;
 
 init();
 
@@ -46,6 +52,13 @@ async function init() {
 
 loginButton.addEventListener("click", async () => {
   const { email, password } = credentials();
+  const testSession = await tryTestLogin(email, password);
+  if (testSession) {
+    setSession(testSession);
+    setStatus("Logged in.");
+    return;
+  }
+
   const options = authOptionsWithCaptcha();
   if (options === null) return;
   const { error } = await supabaseClient.auth.signInWithPassword({
@@ -91,12 +104,22 @@ googleButton.addEventListener("click", async () => {
 });
 
 logoutButton.addEventListener("click", async () => {
-  await supabaseClient.auth.signOut();
+  if (currentSession?.access_token?.startsWith("test-")) {
+    setSession(null);
+  } else {
+    await supabaseClient.auth.signOut();
+  }
   setStatus("Logged out.");
 });
 
 translateCheckbox.addEventListener("change", () => {
   translationOptions.hidden = !translateCheckbox.checked;
+});
+
+fileInput.addEventListener("change", analyzeSelectedFile);
+
+playNarratorSampleButton.addEventListener("click", () => {
+  playVoiceSample(document.getElementById("narrator-voice").value);
 });
 
 uploadForm.addEventListener("submit", async (event) => {
@@ -116,6 +139,10 @@ uploadForm.addEventListener("submit", async (event) => {
     setStatus("Only .txt files are accepted.", true);
     return;
   }
+  if (!fileAnalysis) {
+    setStatus("Wait for automatic language and chapter detection before uploading.", true);
+    return;
+  }
 
   const formData = new FormData();
   formData.append("file", file);
@@ -124,6 +151,9 @@ uploadForm.addEventListener("submit", async (event) => {
   formData.append("also_wav", document.getElementById("also-wav").checked ? "true" : "false");
   formData.append("translate", translateCheckbox.checked ? "true" : "false");
   formData.append("translation_languages", selectedTranslationLanguages().join(","));
+  formData.append("translation_voices", JSON.stringify(selectedTranslationVoices()));
+  formData.append("source_language", fileAnalysis.source_language || "");
+  formData.append("chapter_titles", JSON.stringify(fileAnalysis.chapters.map((chapter) => chapter.title)));
   formData.append("make_video", document.getElementById("make-video").checked ? "true" : "false");
 
   setStatus("Uploading...");
@@ -136,6 +166,9 @@ uploadForm.addEventListener("submit", async (event) => {
       body: formData,
     });
     uploadForm.reset();
+    fileAnalysis = null;
+    renderAnalysisResult();
+    setProductionOptionsEnabled(Boolean(fileAnalysis));
     translationOptions.hidden = true;
     setStatus("Uploaded. Status is saved as uploaded for manual processing.");
     await loadFiles();
@@ -153,10 +186,138 @@ function credentials() {
   };
 }
 
+async function tryTestLogin(email, password) {
+  try {
+    const data = await fetchJson("/test-login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
+    return {
+      access_token: data.access_token,
+      user: data.user,
+    };
+  } catch (_error) {
+    return null;
+  }
+}
+
 function selectedTranslationLanguages() {
   return Array.from(
     document.querySelectorAll("[name='translation-language']:checked")
   ).map((input) => input.value);
+}
+
+function selectedTranslationVoices() {
+  return selectedTranslationLanguages().reduce((voices, language) => {
+    const select = document.querySelector(`[name="translation-voice-${cssEscape(language)}"]`);
+    if (select?.value) {
+      voices[language] = select.value;
+    }
+    return voices;
+  }, {});
+}
+
+async function analyzeSelectedFile() {
+  fileAnalysis = null;
+  setProductionOptionsEnabled(Boolean(fileAnalysis));
+  renderAnalysisResult("Detecting source language and chapters...");
+  const file = fileInput.files[0];
+  if (!file) {
+    renderAnalysisResult();
+    return;
+  }
+  if (!file.name.toLowerCase().endsWith(".txt")) {
+    renderAnalysisResult("Only .txt files are accepted.", true);
+    return;
+  }
+  if (!currentSession?.access_token) {
+    renderAnalysisResult("Log in before automatic detection.", true);
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+  try {
+    fileAnalysis = await fetchJson("/analyze-file", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${currentSession.access_token}`,
+      },
+      body: formData,
+    });
+    renderAnalysisResult();
+    setProductionOptionsEnabled(Boolean(fileAnalysis));
+  } catch (error) {
+    fileAnalysis = null;
+    setProductionOptionsEnabled(Boolean(fileAnalysis));
+    renderAnalysisResult(error.message, true);
+  }
+}
+
+function renderAnalysisResult(message = "", isError = false) {
+  if (!fileAnalysis) {
+    analysisResult.textContent = message || "Choose a TXT file to detect the source language and chapters.";
+    analysisResult.classList.toggle("error", isError);
+    chapterList.innerHTML = "";
+    return;
+  }
+
+  analysisResult.textContent = `${fileAnalysis.source_language || "Unknown"} detected, ${fileAnalysis.chapter_count} chapter${fileAnalysis.chapter_count === 1 ? "" : "s"} found.`;
+  analysisResult.classList.remove("error");
+  chapterList.innerHTML = fileAnalysis.chapters
+    .map((chapter) => `<li>${escapeHtml(chapter.title)}</li>`)
+    .join("");
+}
+
+function setProductionOptionsEnabled(enabled) {
+  productionOptions.disabled = !enabled;
+}
+
+function playVoiceSample(voiceName) {
+  if (!voiceName) {
+    setStatus("Choose a narrator voice first.", true);
+    return;
+  }
+  if (!("speechSynthesis" in window)) {
+    setStatus("Voice samples are not supported in this browser.", true);
+    return;
+  }
+
+  const utterance = new SpeechSynthesisUtterance(sampleTextForVoice(voiceName));
+  utterance.lang = languageCodeForVoice(voiceName);
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utterance);
+  setStatus(`Playing sample for ${voiceName}.`);
+}
+
+function sampleTextForVoice(voiceName) {
+  if (voiceName.includes("Zulu")) {
+    return "Sawubona. Lesi yisampula yezwi lencwadi elizwakala ngokucacile.";
+  }
+  if (voiceName.includes("Xhosa")) {
+    return "Molo. Le yisampulu yelizwi lencwadi evakala ngokucacileyo.";
+  }
+  if (voiceName.includes("Afrikaans")) {
+    return "Hallo. Hierdie is 'n kort stemvoorbeeld vir die oudioboek.";
+  }
+  return "Hello. This is a short narrator voice sample for the audiobook.";
+}
+
+function languageCodeForVoice(voiceName) {
+  if (voiceName.includes("Zulu")) return "zu-ZA";
+  if (voiceName.includes("Xhosa")) return "xh-ZA";
+  if (voiceName.includes("Afrikaans")) return "af-ZA";
+  return "en-ZA";
+}
+
+function cssEscape(value) {
+  if (window.CSS?.escape) {
+    return window.CSS.escape(value);
+  }
+  return String(value).replaceAll('"', '\\"');
 }
 
 function authOptionsWithCaptcha() {
