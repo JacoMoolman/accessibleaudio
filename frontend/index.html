@@ -4,131 +4,169 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Submit Audiobook | Accessible Audio</title>
+    <link rel="icon" href="https://accessibleaudio.co.za/favicon.svg?v=20260612-private" type="image/svg+xml">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
-    <main class="app-shell">
-      <section class="intro">
-        <a class="brand" href="https://accessibleaudio.co.za">Accessible Audio</a>
-        <h1>Submit Audiobook</h1>
-        <p>
-          Upload a UTF-8 `.txt` manuscript for manual audiobook processing.
-          Advanced generation options are captured now and processed later.
-        </p>
+    <header class="site-header" aria-label="Primary navigation">
+      <a class="brand" href="https://accessibleaudio.co.za/" aria-label="Accessible Audio home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        Accessible Audio
+      </a>
+      <nav class="nav-links" aria-label="Main menu">
+        <a href="https://accessibleaudio.co.za/#service">Service</a>
+        <a href="https://accessibleaudio.co.za/#private">Local production</a>
+        <a href="https://accessibleaudio.co.za/#languages">Languages</a>
+        <a href="https://accessibleaudio.co.za/audiobooks.html">Audiobooks</a>
+        <a href="https://accessibleaudio.co.za/contact.html">Contact</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="submit-hero" aria-labelledby="page-title">
+        <div class="submit-hero-content">
+          <p class="eyebrow">Manuscript upload</p>
+          <h1 id="page-title">Submit Audiobook</h1>
+          <p class="hero-lead">
+            Upload a UTF-8 .txt manuscript for manual audiobook processing.
+            Your account keeps each upload and its production options together.
+          </p>
+        </div>
       </section>
 
-      <section class="panel auth-panel" id="auth-panel">
-        <div class="panel-header">
-          <h2>Account</h2>
-          <p id="auth-state">Sign up or log in to upload a book.</p>
+      <section class="submit-section" aria-label="Audiobook submission form">
+        <div class="submit-intro">
+          <div>
+            <p class="section-kicker">Secure submission</p>
+            <h2>Send a title for review.</h2>
+          </div>
+          <p>
+            Start with one plain-text manuscript, choose the narrator voice,
+            and note any optional translation, WAV, or video requests. Files are
+            stored under your account for follow-up processing.
+          </p>
         </div>
-        <form id="auth-form">
-          <div class="auth-controls grid-form" id="auth-controls">
-            <label>
-              Email
-              <input id="email" type="email" autocomplete="email" required>
-            </label>
-            <label>
-              Password
-              <input id="password" type="password" autocomplete="current-password" required minlength="6">
-            </label>
-            <div class="captcha-slot" id="captcha-slot" hidden></div>
-            <div class="actions">
-              <button type="button" id="login-button">Log in</button>
-              <button type="button" id="signup-button" class="secondary">Sign up</button>
-              <button type="button" id="google-button" class="secondary">Continue with Google</button>
+
+        <div class="submit-grid">
+          <section class="panel auth-panel" id="auth-panel">
+            <div class="panel-header">
+              <h2>Account</h2>
+              <p id="auth-state">Sign up or log in to upload a book.</p>
             </div>
-          </div>
-          <div class="actions">
-            <button type="button" id="logout-button" class="ghost" hidden>Log out</button>
-          </div>
-        </form>
-      </section>
+            <form id="auth-form">
+              <div class="auth-controls grid-form" id="auth-controls">
+                <label>
+                  Email
+                  <input id="email" type="email" autocomplete="email" required>
+                </label>
+                <label>
+                  Password
+                  <input id="password" type="password" autocomplete="current-password" required minlength="6">
+                </label>
+                <div class="captcha-slot" id="captcha-slot" hidden></div>
+                <div class="actions">
+                  <button type="button" id="login-button">Log in</button>
+                  <button type="button" id="signup-button" class="secondary">Sign up</button>
+                  <button type="button" id="google-button" class="secondary">Continue with Google</button>
+                </div>
+              </div>
+              <div class="actions">
+                <button type="button" id="logout-button" class="ghost" hidden>Log out</button>
+              </div>
+            </form>
+          </section>
 
-      <section class="panel upload-panel" id="upload-panel" hidden>
-        <div class="panel-header">
-          <h2>Upload Book</h2>
-          <p>Required: one `.txt` file. Files are stored in S3 under your user folder.</p>
-        </div>
-
-        <form id="upload-form" class="stack-form">
-          <label>
-            Book text file
-            <input id="book-file" type="file" accept=".txt,text/plain" required>
-          </label>
-
-          <label>
-            Narrator voice for original language
-            <select id="narrator-voice" required>
-              <option value="">Select voice</option>
-              <option>English Female</option>
-              <option>English Male</option>
-              <option>Afrikaans Male</option>
-              <option>Zulu Female</option>
-              <option>Zulu Male</option>
-              <option>Xhosa Male</option>
-            </select>
-          </label>
-
-          <fieldset>
-            <legend>Output Format</legend>
-            <label class="inline">
-              <input type="radio" name="output-format" value="mp3" checked>
-              MP3
-            </label>
-            <label class="inline">
-              <input id="also-wav" type="checkbox">
-              Also create WAV
-            </label>
-          </fieldset>
-
-          <fieldset>
-            <legend>Translation</legend>
-            <label class="inline">
-              <input id="translate" type="checkbox">
-              Translate this book
-            </label>
-            <div id="translation-options" class="option-grid" hidden>
-              <label class="inline">
-                <input type="checkbox" name="translation-language" value="Afrikaans">
-                Afrikaans -> Afrikaans voice
-              </label>
-              <label class="inline">
-                <input type="checkbox" name="translation-language" value="Zulu">
-                Zulu -> Zulu voice
-              </label>
-              <label class="inline">
-                <input type="checkbox" name="translation-language" value="English">
-                English -> English voice
-              </label>
+          <section class="panel upload-panel" id="upload-panel" hidden>
+            <div class="panel-header">
+              <h2>Upload Book</h2>
+              <p>Required: one .txt file. Files are stored in S3 under your user folder.</p>
             </div>
-          </fieldset>
 
-          <fieldset>
-            <legend>Video</legend>
-            <label class="inline">
-              <input id="make-video" type="checkbox">
-              Make video
-            </label>
-            <p class="field-note">For now: one image per chapter. This is saved as a request only.</p>
-          </fieldset>
+            <form id="upload-form" class="stack-form">
+              <label>
+                Book text file
+                <input id="book-file" type="file" accept=".txt,text/plain" required>
+              </label>
 
-          <div class="actions">
-            <button type="submit">Upload TXT</button>
-          </div>
-        </form>
-      </section>
+              <label>
+                Narrator voice for original language
+                <select id="narrator-voice" required>
+                  <option value="">Select voice</option>
+                  <option>English Female</option>
+                  <option>English Male</option>
+                  <option>Afrikaans Male</option>
+                  <option>Zulu Female</option>
+                  <option>Zulu Male</option>
+                  <option>Xhosa Male</option>
+                </select>
+              </label>
 
-      <section class="panel files-panel" id="files-panel" hidden>
-        <div class="panel-header">
-          <h2>Your Uploads</h2>
-          <button type="button" class="secondary" id="refresh-files">Refresh</button>
+              <fieldset>
+                <legend>Output Format</legend>
+                <label class="inline">
+                  <input type="radio" name="output-format" value="mp3" checked>
+                  MP3
+                </label>
+                <label class="inline">
+                  <input id="also-wav" type="checkbox">
+                  Also create WAV
+                </label>
+              </fieldset>
+
+              <fieldset>
+                <legend>Translation</legend>
+                <label class="inline">
+                  <input id="translate" type="checkbox">
+                  Translate this book
+                </label>
+                <div id="translation-options" class="option-grid" hidden>
+                  <label class="inline">
+                    <input type="checkbox" name="translation-language" value="Afrikaans">
+                    Afrikaans -> Afrikaans voice
+                  </label>
+                  <label class="inline">
+                    <input type="checkbox" name="translation-language" value="Zulu">
+                    Zulu -> Zulu voice
+                  </label>
+                  <label class="inline">
+                    <input type="checkbox" name="translation-language" value="English">
+                    English -> English voice
+                  </label>
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend>Video</legend>
+                <label class="inline">
+                  <input id="make-video" type="checkbox">
+                  Make video
+                </label>
+                <p class="field-note">For now: one image per chapter. This is saved as a request only.</p>
+              </fieldset>
+
+              <div class="actions">
+                <button type="submit">Upload TXT</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="panel files-panel" id="files-panel" hidden>
+            <div class="panel-header">
+              <h2>Your Uploads</h2>
+              <button type="button" class="secondary" id="refresh-files">Refresh</button>
+            </div>
+            <div id="files-list" class="files-list"></div>
+          </section>
         </div>
-        <div id="files-list" class="files-list"></div>
-      </section>
 
-      <p class="status" id="status" role="status"></p>
+        <p class="status" id="status" role="status"></p>
+      </section>
     </main>
+
+    <footer class="site-footer">
+      <p>Accessible Audio</p>
+      <a href="mailto:audio@accessibleaudio.co.za">audio@accessibleaudio.co.za</a>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>

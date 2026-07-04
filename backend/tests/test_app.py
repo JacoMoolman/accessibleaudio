@@ -135,6 +135,21 @@ def test_submit_page_is_served_only_under_submit_path():
     assert "Submit Audiobook" in submit_response.text
 
 
+def test_submit_page_nav_points_back_to_public_website():
+    client, _, _ = make_client()
+
+    response = client.get("/submit")
+
+    assert response.status_code == 200
+    assert 'class="site-header"' in response.text
+    assert 'href="https://accessibleaudio.co.za/"' in response.text
+    assert 'href="https://accessibleaudio.co.za/#service"' in response.text
+    assert 'href="https://accessibleaudio.co.za/#private"' in response.text
+    assert 'href="https://accessibleaudio.co.za/#languages"' in response.text
+    assert 'href="https://accessibleaudio.co.za/audiobooks.html"' in response.text
+    assert 'href="https://accessibleaudio.co.za/contact.html"' in response.text
+
+
 def test_submit_page_does_not_render_language_placeholder():
     client, _, _ = make_client()
 
@@ -165,6 +180,16 @@ def test_frontend_responses_disable_browser_cache():
 
         assert response.status_code == 200
         assert response.headers["cache-control"] == "no-store"
+
+
+def test_frontend_css_preserves_hidden_controls():
+    client, _, _ = make_client()
+
+    response = client.get("/styles.css")
+
+    assert response.status_code == 200
+    assert "[hidden]" in response.text
+    assert "display: none !important" in response.text
 
 
 def test_validate_txt_upload_rejects_non_txt_filename():
