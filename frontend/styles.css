@@ -470,6 +470,103 @@ button.ghost {
   color: var(--red);
 }
 
+.submit-section {
+  --submit-ink: #fffaf1;
+  --submit-muted: rgba(255, 250, 241, 0.72);
+  --submit-line: rgba(255, 250, 241, 0.16);
+  --submit-panel: rgba(6, 32, 28, 0.92);
+  --submit-panel-soft: rgba(255, 250, 241, 0.07);
+  color: var(--submit-ink);
+  border-top-color: rgba(255, 250, 241, 0.12);
+  background: #062c27;
+}
+
+.submit-section::before {
+  opacity: 0.18;
+  mix-blend-mode: screen;
+}
+
+.submit-section .section-kicker {
+  color: #6ff1dc;
+}
+
+.submit-section h2,
+.submit-section label,
+.submit-section legend,
+.submit-section .panel h2 {
+  color: var(--submit-ink);
+}
+
+.submit-section .submit-intro p:not(.section-kicker),
+.submit-section .panel-header p,
+.submit-section .field-note,
+.submit-section .empty,
+.submit-section .file-row span,
+.submit-section .chapter-list {
+  color: var(--submit-muted);
+}
+
+.submit-section .panel {
+  color: var(--submit-ink);
+  background: var(--submit-panel);
+  border-color: var(--submit-line);
+  box-shadow: 0 22px 56px rgb(0 0 0 / 0.24);
+}
+
+.submit-section .analysis-panel {
+  background: rgba(111, 241, 220, 0.08);
+  border-color: rgba(111, 241, 220, 0.22);
+}
+
+.submit-section .analysis-state,
+.submit-section .status {
+  color: #b8fff4;
+}
+
+.submit-section input,
+.submit-section select {
+  color-scheme: dark;
+  color: var(--submit-ink);
+  border-color: var(--submit-line);
+  background: rgba(255, 250, 241, 0.08);
+}
+
+.submit-section input::file-selector-button {
+  margin-right: 12px;
+  border: 1px solid rgba(111, 241, 220, 0.28);
+  border-radius: 5px;
+  background: rgba(111, 241, 220, 0.12);
+  color: var(--submit-ink);
+  font: inherit;
+  font-weight: 760;
+}
+
+.submit-section fieldset,
+.submit-section .file-row {
+  border-color: var(--submit-line);
+  background: var(--submit-panel-soft);
+}
+
+.submit-section button.secondary {
+  border-color: rgba(111, 241, 220, 0.28);
+  background: rgba(111, 241, 220, 0.12);
+  color: #dffffa;
+}
+
+.submit-section button.secondary:hover {
+  border-color: rgba(111, 241, 220, 0.42);
+  background: rgba(111, 241, 220, 0.2);
+}
+
+.submit-section button.ghost {
+  color: #6ff1dc;
+}
+
+.submit-section .badge {
+  color: #052c27;
+  background: #9ff5e7;
+}
+
 .site-footer {
   display: flex;
   justify-content: space-between;
