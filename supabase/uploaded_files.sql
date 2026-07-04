@@ -6,19 +6,20 @@ create table if not exists public.uploaded_files (
   s3_key text not null,
   status text not null default 'uploaded'
     check (status in ('uploaded', 'queued', 'processing', 'completed', 'failed')),
-  narrator_voice text,
-  output_format text not null default 'mp3'
-    check (output_format in ('mp3', 'wav')),
-  also_wav boolean not null default false,
-  translate boolean not null default false,
-  translation_languages text[] not null default '{}',
-  make_video boolean not null default false,
-  source_language text,
   created_at timestamptz not null default now(),
   processed_at timestamptz,
   result_text text,
   result_path text
 );
+
+alter table public.uploaded_files
+  drop column if exists narrator_voice,
+  drop column if exists output_format,
+  drop column if exists also_wav,
+  drop column if exists translate,
+  drop column if exists translation_languages,
+  drop column if exists make_video,
+  drop column if exists source_language;
 
 create index if not exists uploaded_files_user_created_idx
   on public.uploaded_files (user_id, created_at desc);

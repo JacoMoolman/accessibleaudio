@@ -444,7 +444,12 @@ def test_process_file_uploads_txt_to_s3_and_saves_metadata():
         "users/11111111-1111-4111-8111-111111111111/uploads/"
     )
     assert body["s3_key"].endswith("/Book_One.txt")
-    assert repo.created[0]["narrator_voice"] == "Zulu Female"
+    assert set(repo.created[0]).issuperset(
+        {"id", "user_id", "filename", "s3_bucket", "s3_key", "status"}
+    )
+    assert "narrator_voice" not in repo.created[0]
+    assert "source_language" not in repo.created[0]
+    assert "translation_languages" not in repo.created[0]
     assert storage.uploads[0]["content"] == b"Chapter 1\nHello"
     assert storage.uploads[0]["content_type"] == "text/plain; charset=utf-8"
 
@@ -492,7 +497,7 @@ def test_process_file_uploads_options_text_file_next_to_book():
     assert "make_video: true" in options_text
 
 
-def test_process_file_saves_source_language_metadata():
+def test_process_file_keeps_source_language_out_of_database_record():
     client, repo, _ = make_client()
 
     response = client.post(
@@ -512,7 +517,7 @@ def test_process_file_saves_source_language_metadata():
     )
 
     assert response.status_code == 201
-    assert repo.created[0]["source_language"] == "English"
+    assert "source_language" not in repo.created[0]
 
 
 def test_process_file_tolerates_malformed_chapter_titles_form_value():

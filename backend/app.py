@@ -166,13 +166,6 @@ def create_app(
             "s3_bucket": bucket,
             "s3_key": key,
             "status": "uploaded",
-            "narrator_voice": narrator_voice.strip() or None,
-            "output_format": output_format,
-            "also_wav": also_wav,
-            "translate": translate,
-            "translation_languages": parsed_translation_languages,
-            "source_language": source_language.strip() or None,
-            "make_video": make_video,
         }
         if _is_test_user(user, settings.test_login_user_id):
             saved = {
