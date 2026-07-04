@@ -247,6 +247,17 @@ def test_submit_page_has_voice_sample_and_translation_voice_controls():
     assert 'name="translation-voice-English"' in response.text
 
 
+def test_submit_page_describes_audiobook_ready_txt_without_storage_detail():
+    client, _, _ = make_client()
+
+    response = client.get("/submit")
+
+    assert response.status_code == 200
+    assert "Upload an audiobook-ready TXT file." in response.text
+    assert "Everything in the TXT file" in response.text
+    assert "Files are stored in S3 under your user folder." not in response.text
+
+
 def test_frontend_analyzes_file_before_unlocking_options():
     client, _, _ = make_client()
 
