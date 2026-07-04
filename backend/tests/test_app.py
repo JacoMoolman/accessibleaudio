@@ -219,6 +219,22 @@ def test_frontend_css_keeps_submit_text_side_by_side_until_tablet():
     assert ".submit-intro,\n  .submit-grid {\n    grid-template-columns: 1fr;" in response.text
 
 
+def test_frontend_css_keeps_submit_tool_near_first_viewport():
+    client, _, _ = make_client()
+
+    response = client.get("/styles.css")
+
+    assert response.status_code == 200
+    assert "min-height: clamp(190px, 28svh, 300px);" in response.text
+    assert "padding: clamp(18px, 3vw, 40px) clamp(20px, 5vw, 72px);" in response.text
+    assert "h1 {\n  max-width: none;" in response.text
+    assert "font-size: clamp(2.6rem, 5vw, 4.5rem);" in response.text
+    assert "margin-bottom: clamp(18px, 2.4vw, 28px);" in response.text
+    assert "padding-block: clamp(24px, 3vw, 40px);" in response.text
+    assert "min-height: 440px;" in response.text
+    assert "padding-top: 120px;" in response.text
+
+
 def test_analyze_file_detects_language_and_chapter_titles():
     client, _, _ = make_client()
 

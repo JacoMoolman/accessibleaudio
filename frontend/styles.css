@@ -98,10 +98,10 @@ a {
 
 .submit-hero {
   position: relative;
-  min-height: min(620px, calc(82svh - 72px));
+  min-height: clamp(190px, 28svh, 300px);
   display: grid;
   align-items: center;
-  padding: clamp(54px, 8vw, 104px) clamp(20px, 5vw, 72px);
+  padding: clamp(18px, 3vw, 40px) clamp(20px, 5vw, 72px);
   color: #fffaf1;
   background:
     linear-gradient(90deg, rgba(36, 26, 8, 0.96) 0%, rgba(36, 26, 8, 0.86) 34%, rgba(36, 26, 8, 0.42) 62%, rgba(36, 26, 8, 0.08) 100%),
@@ -133,11 +133,11 @@ p {
 }
 
 h1 {
-  max-width: 9ch;
-  margin-bottom: 22px;
+  max-width: none;
+  margin-bottom: 14px;
   color: #f4efe6;
-  font-size: clamp(3rem, 6.6vw, 6rem);
-  line-height: 0.92;
+  font-size: clamp(2.6rem, 5vw, 4.5rem);
+  line-height: 0.96;
   letter-spacing: 0;
 }
 
@@ -155,10 +155,10 @@ h2 {
 }
 
 .hero-lead {
-  max-width: 42rem;
+  max-width: 34rem;
   margin-bottom: 0;
   color: rgba(255, 250, 241, 0.78);
-  font-size: clamp(1.12rem, 1.75vw, 1.45rem);
+  font-size: clamp(1rem, 1.3vw, 1.2rem);
   font-weight: 670;
   line-height: 1.45;
 }
@@ -172,7 +172,7 @@ h2 {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  padding-block: clamp(46px, 7vw, 84px);
+  padding-block: clamp(24px, 3vw, 40px);
   border-top: 1px solid var(--line);
   background: var(--soft);
 }
@@ -202,7 +202,7 @@ h2 {
   gap: 16px;
   width: min(1040px, 100%);
   margin-inline: auto;
-  margin-bottom: clamp(28px, 4vw, 42px);
+  margin-bottom: clamp(18px, 2.4vw, 28px);
   text-align: left;
 }
 
@@ -615,9 +615,9 @@ button.ghost {
   }
 
   .submit-hero {
-    min-height: 620px;
+    min-height: 440px;
     align-items: end;
-    padding: 44px 20px;
+    padding: 36px 20px;
     background:
       linear-gradient(180deg, rgba(36, 26, 8, 0.1), rgba(36, 26, 8, 0.7) 46%, rgba(36, 26, 8, 0.96) 100%),
       var(--hero-image) 58% top / cover;
@@ -626,7 +626,7 @@ button.ghost {
   .submit-hero-content {
     width: 100%;
     max-width: calc(100vw - 40px);
-    padding-top: 220px;
+    padding-top: 120px;
   }
 
   .submit-intro,
