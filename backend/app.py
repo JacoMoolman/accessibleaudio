@@ -272,12 +272,16 @@ def _parse_translation_voices(value: str) -> dict[str, str]:
     if not value:
         return {}
     if value.startswith("{"):
-        parsed = json.loads(value)
-        return {
-            str(language).strip(): str(voice).strip()
-            for language, voice in parsed.items()
-            if str(language).strip() and str(voice).strip()
-        }
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            parsed = {}
+        if isinstance(parsed, dict):
+            return {
+                str(language).strip(): str(voice).strip()
+                for language, voice in parsed.items()
+                if str(language).strip() and str(voice).strip()
+            }
     pairs = {}
     for item in value.split(","):
         if ":" not in item:
@@ -295,9 +299,17 @@ def _parse_chapter_titles(value: str) -> list[str]:
     if not value:
         return []
     if value.startswith("["):
-        parsed = json.loads(value)
-        return [str(item).strip() for item in parsed if str(item).strip()]
-    return [item.strip() for item in value.splitlines() if item.strip()]
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            parsed = None
+        if isinstance(parsed, list):
+            return [str(item).strip() for item in parsed if str(item).strip()]
+    return [
+        item.strip().strip('"').strip("'")
+        for item in re.split(r"[\r\n,]+", value.strip("[]"))
+        if item.strip().strip('"').strip("'")
+    ]
 
 
 def _options_key_for_upload(book_key: str) -> str:

@@ -504,6 +504,33 @@ def test_process_file_saves_source_language_metadata():
     assert repo.created[0]["source_language"] == "English"
 
 
+def test_process_file_tolerates_malformed_chapter_titles_form_value():
+    client, _, storage = make_client()
+
+    response = client.post(
+        "/process-file",
+        headers={"Authorization": "Bearer valid-token"},
+        files={"file": ("Book One.txt", io.BytesIO(b"Chapter 1\nHello"), "text/plain")},
+        data={
+            "narrator_voice": "English Female",
+            "output_format": "mp3",
+            "also_wav": "false",
+            "translate": "false",
+            "translation_languages": "",
+            "translation_voices": "{",
+            "source_language": "English",
+            "chapter_titles": "[Chapter 1,Chapter 2]",
+            "make_video": "false",
+        },
+    )
+
+    assert response.status_code == 201
+    options_text = storage.uploads[1]["content"].decode("utf-8")
+    assert "detected_chapter_count: 2" in options_text
+    assert "chapter_1_title: Chapter 1" in options_text
+    assert "chapter_2_title: Chapter 2" in options_text
+
+
 def test_files_endpoint_returns_only_authenticated_users_records():
     client, repo, _ = make_client()
     repo.created.append(
