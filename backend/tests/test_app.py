@@ -193,6 +193,18 @@ def test_frontend_css_preserves_hidden_controls():
     assert "display: none !important" in response.text
 
 
+def test_frontend_css_keeps_submit_text_side_by_side_until_tablet():
+    client, _, _ = make_client()
+
+    response = client.get("/styles.css")
+
+    assert response.status_code == 200
+    assert ".submit-intro {\n  display: grid;\n  grid-template-columns: minmax(260px, 0.82fr) minmax(360px, 1.18fr);" in response.text
+    assert ".submit-grid {\n  display: grid;\n  grid-template-columns: minmax(300px, 0.72fr) minmax(420px, 1.28fr);" in response.text
+    assert "@media (max-width: 900px)" in response.text
+    assert ".submit-intro,\n  .submit-grid {\n    grid-template-columns: 1fr;" in response.text
+
+
 def test_analyze_file_detects_language_and_chapter_titles():
     client, _, _ = make_client()
 

@@ -196,17 +196,18 @@ h2 {
 
 .submit-intro {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  justify-items: center;
+  grid-template-columns: minmax(260px, 0.82fr) minmax(360px, 1.18fr);
+  align-items: center;
+  justify-items: stretch;
   gap: 16px;
   width: min(1040px, 100%);
   margin-inline: auto;
   margin-bottom: clamp(28px, 4vw, 42px);
-  text-align: center;
+  text-align: left;
 }
 
 .submit-intro h2 {
-  max-width: 16ch;
+  max-width: none;
 }
 
 .submit-intro p:not(.section-kicker),
@@ -219,16 +220,23 @@ h2 {
 }
 
 .submit-intro > p {
-  max-width: 760px;
-  margin: 0 auto;
+  max-width: 680px;
+  margin: 0;
+  justify-self: end;
   font-size: 1.02rem;
 }
 
 .submit-grid {
   display: grid;
+  grid-template-columns: minmax(300px, 0.72fr) minmax(420px, 1.28fr);
+  align-items: start;
   gap: 18px;
   width: min(1040px, 100%);
   margin-inline: auto;
+}
+
+.auth-panel {
+  grid-column: 1 / -1;
 }
 
 .panel {
@@ -621,8 +629,24 @@ button.ghost {
     padding-top: 220px;
   }
 
-  .submit-intro {
+  .submit-intro,
+  .submit-grid {
     grid-template-columns: 1fr;
+  }
+
+  .submit-intro {
+    justify-items: center;
+    text-align: center;
+  }
+
+  .submit-intro h2 {
+    max-width: 16ch;
+  }
+
+  .submit-intro > p {
+    max-width: 760px;
+    margin: 0 auto;
+    justify-self: center;
   }
 
   .submit-section::before {
