@@ -373,7 +373,7 @@ fieldset {
 
 .option-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 8px 16px;
   margin-top: 10px;
 }
@@ -537,6 +537,11 @@ button.ghost {
   color: var(--submit-ink);
   border-color: var(--submit-line);
   background: rgba(255, 250, 241, 0.08);
+}
+
+.submit-section select option {
+  background: #06201c;
+  color: var(--submit-ink);
 }
 
 .submit-section input::file-selector-button {

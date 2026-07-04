@@ -236,6 +236,18 @@ def test_frontend_css_keeps_submit_tool_near_first_viewport():
     assert "padding-top: 120px;" in response.text
 
 
+def test_frontend_css_keeps_translation_selects_dark_and_readable():
+    client, _, _ = make_client()
+
+    response = client.get("/styles.css")
+
+    assert response.status_code == 200
+    assert "grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));" in response.text
+    assert ".submit-section select option {" in response.text
+    assert "background: #06201c;" in response.text
+    assert "color: var(--submit-ink);" in response.text
+
+
 def test_analyze_file_detects_language_and_chapter_titles():
     client, _, _ = make_client()
 
