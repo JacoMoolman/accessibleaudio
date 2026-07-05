@@ -135,6 +135,19 @@ def test_health_returns_ok():
     assert response.json() == {"ok": True}
 
 
+def test_responses_include_security_headers():
+    client, _, _ = make_client()
+
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "DENY"
+    assert response.headers["referrer-policy"] == "no-referrer"
+    assert "geolocation=()" in response.headers["permissions-policy"]
+    assert "max-age=31536000" in response.headers["strict-transport-security"]
+
+
 def test_public_config_returns_only_browser_safe_values():
     client, _, _ = make_client()
 
