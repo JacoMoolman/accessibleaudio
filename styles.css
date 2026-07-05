@@ -1,11 +1,11 @@
 :root {
-  --ink: #14201c;
-  --muted: #66736e;
-  --paper: #fbf7ee;
-  --white: #ffffff;
-  --soft: #f1eadf;
-  --line: rgba(20, 32, 28, 0.14);
-  --green: #126657;
+  --ink: #fffaf1;
+  --muted: rgba(255, 250, 241, 0.7);
+  --paper: #081613;
+  --white: #fffaf1;
+  --soft: #11231e;
+  --line: rgba(255, 250, 241, 0.16);
+  --green: #6ff1dc;
   --green-dark: #073d35;
   --brown-dark: #382815;
   --gold: #b9812d;
@@ -86,7 +86,7 @@ a {
   height: 32px;
   border-radius: 50%;
   background:
-    var(--paper) url("assets/accessible-audio-logo-round.svg?v=20260624-logo1") center / cover no-repeat;
+    transparent url("assets/accessible-audio-logo-round.svg?v=20260624-logo1") center / cover no-repeat;
 }
 
 .nav-links {
@@ -204,24 +204,25 @@ h3 {
 }
 
 .button-primary {
-  color: #fff;
+  color: #052c27;
   border-color: var(--green);
   background: var(--green);
 }
 
 .button-primary:hover {
-  background: var(--green-dark);
+  color: #fffaf1;
+  background: #0f7d6c;
 }
 
 .button-secondary {
   color: #fffaf1;
-  border-color: rgba(255, 255, 255, 0.32);
-  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(111, 241, 220, 0.36);
+  background: rgba(7, 61, 53, 0.58);
 }
 
 .button-secondary:hover {
-  border-color: rgba(255, 255, 255, 0.74);
-  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(111, 241, 220, 0.72);
+  background: rgba(15, 125, 108, 0.72);
 }
 
 .intro-strip,
@@ -395,12 +396,12 @@ h3 {
   padding: 18px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(7, 61, 53, 0.62);
 }
 
 .cost-list p {
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(111, 241, 220, 0.18);
+  background: rgba(5, 44, 39, 0.58);
 }
 
 .stat-grid strong,
@@ -411,7 +412,7 @@ h3 {
 }
 
 .stat-grid strong {
-  color: var(--green-dark);
+  color: #6ff1dc;
   font-size: clamp(1.8rem, 4vw, 2.7rem);
   line-height: 1;
 }
@@ -428,7 +429,7 @@ h3 {
 }
 
 .stat-grid span {
-  color: var(--muted);
+  color: rgba(255, 250, 241, 0.72);
   font-size: 0.92rem;
 }
 
@@ -452,7 +453,7 @@ h3 {
 
 .feature-list strong,
 .technical-list strong {
-  color: var(--ink);
+  color: #fffaf1;
 }
 
 .feature-list span,
@@ -463,7 +464,7 @@ h3 {
 }
 
 .split-section {
-  background: #f1eadf;
+  background: #10231e;
 }
 
 .split-section::before {
@@ -543,7 +544,7 @@ h3 {
   border: 1px solid var(--line);
   border-left: 4px solid var(--green);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.76);
+  background: rgba(7, 61, 53, 0.62);
   font-size: 0.92rem;
   font-weight: 820;
 }
@@ -681,7 +682,7 @@ h3 {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(240, 194, 99, 0.94);
 }
 
 .play-badge::before {
@@ -692,7 +693,7 @@ h3 {
   transform: translate(-50%, -50%);
   border-top: 8px solid transparent;
   border-bottom: 8px solid transparent;
-  border-left: 12px solid var(--green);
+  border-left: 12px solid #052c27;
 }
 
 .video-player {
@@ -728,7 +729,7 @@ h3 {
   grid-template-columns: minmax(0, 0.95fr) minmax(320px, 0.8fr);
   gap: clamp(32px, 6vw, 92px);
   align-items: start;
-  background: var(--soft);
+  background: #10231e;
 }
 
 .library-intro::before {
@@ -741,7 +742,7 @@ h3 {
 }
 
 .audiobook-section-alt {
-  background: #f1eadf;
+  background: #11231e;
 }
 
 .book-heading {
@@ -780,9 +781,9 @@ h3 {
 }
 
 .cta-section .button-primary {
-  color: var(--green-dark);
-  border-color: #fff;
-  background: #fff;
+  color: #241a08;
+  border-color: #f0c263;
+  background: #f0c263;
 }
 
 .site-footer {
@@ -858,8 +859,8 @@ h3 {
   margin-top: 16px;
   padding: 13px 16px;
   border-radius: 6px;
-  color: var(--green-dark);
-  background: #fff;
+  color: #241a08;
+  background: #f0c263;
   font-weight: 820;
   text-decoration: none;
   overflow-wrap: anywhere;

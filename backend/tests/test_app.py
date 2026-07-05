@@ -208,16 +208,17 @@ def test_frontend_css_uses_dark_submit_page_backgrounds():
     assert "--submit-panel: rgba(6, 32, 28, 0.92);" in response.text
 
 
-def test_frontend_css_keeps_submit_text_side_by_side_until_tablet():
+def test_frontend_css_stacks_submit_text_and_form_controls():
     client, _, _ = make_client()
 
     response = client.get("/styles.css")
 
     assert response.status_code == 200
-    assert ".submit-intro {\n  display: grid;\n  grid-template-columns: minmax(260px, 0.82fr) minmax(360px, 1.18fr);" in response.text
-    assert ".submit-grid {\n  display: grid;\n  grid-template-columns: minmax(300px, 0.72fr) minmax(420px, 1.28fr);" in response.text
-    assert "@media (max-width: 900px)" in response.text
-    assert ".submit-intro,\n  .submit-grid {\n    grid-template-columns: 1fr;" in response.text
+    assert ".submit-intro {\n  display: grid;\n  grid-template-columns: 1fr;" in response.text
+    assert "width: min(820px, 100%);" in response.text
+    assert ".submit-grid {\n  display: grid;\n  grid-template-columns: 1fr;" in response.text
+    assert ".grid-form {\n  display: grid;\n  grid-template-columns: 1fr;" in response.text
+    assert ".actions {\n  display: flex;\n  flex-direction: column;" in response.text
 
 
 def test_frontend_css_keeps_submit_tool_near_first_viewport():
@@ -242,7 +243,8 @@ def test_frontend_css_keeps_translation_selects_dark_and_readable():
     response = client.get("/styles.css")
 
     assert response.status_code == 200
-    assert "grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));" in response.text
+    assert ".option-grid {\n  display: grid;\n  grid-template-columns: 1fr;" in response.text
+    assert ".select-action {\n  display: grid;\n  grid-template-columns: 1fr;" in response.text
     assert ".submit-section select option {" in response.text
     assert "background: #06201c;" in response.text
     assert "color: var(--submit-ink);" in response.text

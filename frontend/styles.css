@@ -196,11 +196,11 @@ h2 {
 
 .submit-intro {
   display: grid;
-  grid-template-columns: minmax(260px, 0.82fr) minmax(360px, 1.18fr);
+  grid-template-columns: 1fr;
   align-items: center;
   justify-items: stretch;
   gap: 16px;
-  width: min(1040px, 100%);
+  width: min(820px, 100%);
   margin-inline: auto;
   margin-bottom: clamp(18px, 2.4vw, 28px);
   text-align: left;
@@ -222,16 +222,16 @@ h2 {
 .submit-intro > p {
   max-width: 680px;
   margin: 0;
-  justify-self: end;
+  justify-self: start;
   font-size: 1.02rem;
 }
 
 .submit-grid {
   display: grid;
-  grid-template-columns: minmax(300px, 0.72fr) minmax(420px, 1.28fr);
+  grid-template-columns: 1fr;
   align-items: start;
   gap: 18px;
-  width: min(1040px, 100%);
+  width: min(820px, 100%);
   margin-inline: auto;
 }
 
@@ -249,6 +249,7 @@ h2 {
 
 .panel-header {
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
   gap: 18px;
   align-items: flex-start;
@@ -262,7 +263,7 @@ h2 {
 
 .grid-form {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 16px;
 }
 
@@ -309,7 +310,7 @@ h2 {
 
 .select-action {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-columns: 1fr;
   gap: 10px;
   align-items: end;
 }
@@ -373,7 +374,7 @@ fieldset {
 
 .option-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: 1fr;
   gap: 8px 16px;
   margin-top: 10px;
 }
@@ -386,9 +387,9 @@ fieldset {
 
 .actions {
   display: flex;
+  flex-direction: column;
   gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
+  align-items: stretch;
   grid-column: 1 / -1;
 }
 
@@ -398,6 +399,7 @@ fieldset {
 }
 
 button {
+  width: 100%;
   min-height: 46px;
   display: inline-flex;
   align-items: center;
