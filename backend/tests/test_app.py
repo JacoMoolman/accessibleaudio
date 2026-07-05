@@ -1,7 +1,9 @@
 import io
 import json
 import uuid
+from hashlib import md5
 from pathlib import Path
+from urllib.parse import quote_plus
 
 import pytest
 from fastapi.testclient import TestClient
@@ -10,6 +12,36 @@ from backend.app import create_app
 from backend.auth import AuthenticatedUser, SupabaseTokenVerifier
 from backend.config import Settings
 from backend.storage import build_upload_key, validate_txt_upload
+
+
+PAYFAST_CHECKOUT_SIGNATURE_FIELD_ORDER = [
+    "merchant_id",
+    "merchant_key",
+    "return_url",
+    "cancel_url",
+    "notify_url",
+    "name_first",
+    "name_last",
+    "email_address",
+    "cell_number",
+    "m_payment_id",
+    "amount",
+    "item_name",
+    "item_description",
+    "custom_int1",
+    "custom_int2",
+    "custom_int3",
+    "custom_int4",
+    "custom_int5",
+    "custom_str1",
+    "custom_str2",
+    "custom_str3",
+    "custom_str4",
+    "custom_str5",
+    "email_confirmation",
+    "confirmation_address",
+    "payment_method",
+]
 
 
 class FakeRepository:
@@ -60,6 +92,10 @@ def make_client():
         aws_region="us-east-1",
         s3_bucket_name="accessible-audio-submissions",
         allowed_origins=["http://localhost:8000"],
+        payfast_merchant_id="10000100",
+        payfast_merchant_key="46f0cd694581a",
+        payfast_passphrase="test-passphrase",
+        payfast_sandbox=True,
     )
 
     async def fake_auth(_authorization):
@@ -75,6 +111,16 @@ def make_client():
         auth_dependency=fake_auth,
     )
     return TestClient(app), repo, storage
+
+
+def expected_payfast_signature(payload, passphrase="test-passphrase"):
+    parts = []
+    for key in PAYFAST_CHECKOUT_SIGNATURE_FIELD_ORDER:
+        value = payload.get(key)
+        if value not in (None, ""):
+            parts.append(f"{key}={quote_plus(str(value).strip())}")
+    parts.append(f"passphrase={quote_plus(passphrase.strip())}")
+    return md5("&".join(parts).encode()).hexdigest()
 
 
 def test_health_returns_ok():
@@ -293,6 +339,8 @@ def test_submit_page_requires_file_analysis_before_options():
     assert 'id="analysis-result"' in response.text
     assert 'id="cost-estimate-panel"' in response.text
     assert 'id="cost-estimate-total"' in response.text
+    assert 'id="payment-panel"' in response.text
+    assert 'id="payfast-form"' in response.text
     assert 'id="production-options"' in response.text
     assert 'disabled data-requires-analysis' in response.text
 
@@ -386,6 +434,18 @@ def test_frontend_displays_analysis_cost_estimate():
     assert "translate: 5000" in response.text
     assert "make_video: 10000" in response.text
     assert "updateCostEstimate" in response.text
+
+
+def test_frontend_renders_server_generated_payfast_checkout():
+    client, _, _ = make_client()
+
+    response = client.get("/app.js")
+
+    assert response.status_code == 200
+    assert "renderPaymentCheckout" in response.text
+    assert "payment.form_action" in response.text
+    assert "payment.fields" in response.text
+    assert 'payfastForm.submit()' in response.text
 
 
 def test_frontend_attempts_direct_test_login_before_supabase_auth():
@@ -570,6 +630,47 @@ def test_process_file_uploads_txt_to_s3_and_saves_metadata():
     assert "translation_languages" not in repo.created[0]
     assert storage.uploads[0]["content"] == b"Chapter 1\nHello"
     assert storage.uploads[0]["content_type"] == "text/plain; charset=utf-8"
+
+
+def test_process_file_returns_signed_payfast_checkout_for_calculated_amount():
+    client, _, _ = make_client()
+
+    response = client.post(
+        "/process-file",
+        headers={"Authorization": "Bearer valid-token"},
+        files={
+            "file": (
+                "Book One.txt",
+                io.BytesIO(
+                    b"Chapter One\nDown the rabbit-hole.\n\n"
+                    b"CHAPTER TWO\nThe pool of tears."
+                ),
+                "text/plain",
+            )
+        },
+        data={
+            "narrator_voice": "Zulu Female",
+            "output_format": "mp3",
+            "also_wav": "true",
+            "translate": "true",
+            "translation_languages": "Afrikaans",
+            "make_video": "true",
+            "amount": "1.00",
+        },
+    )
+
+    assert response.status_code == 201
+    payment = response.json()["payment"]
+    assert payment["form_action"] == "https://sandbox.payfast.co.za/eng/process"
+    fields = payment["fields"]
+    assert fields["merchant_id"] == "10000100"
+    assert fields["merchant_key"] == "46f0cd694581a"
+    assert fields["amount"] == "175.06"
+    assert fields["item_name"] == "Book One.txt audiobook"
+    assert "12 words" in fields["item_description"]
+    assert "signature" in fields
+    assert "test-passphrase" not in fields.values()
+    assert fields["signature"] == expected_payfast_signature(fields)
 
 
 def test_process_file_uploads_options_text_file_next_to_book():

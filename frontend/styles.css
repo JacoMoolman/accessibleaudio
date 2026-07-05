@@ -303,7 +303,8 @@ h2 {
   line-height: 1.5;
 }
 
-.cost-estimate-panel {
+.cost-estimate-panel,
+.payment-panel {
   display: grid;
   gap: 14px;
   padding: 16px;
@@ -312,16 +313,24 @@ h2 {
   background: rgba(240, 194, 99, 0.08);
 }
 
-.cost-estimate-panel .section-kicker {
+.cost-estimate-panel .section-kicker,
+.payment-panel .section-kicker {
   margin-bottom: 6px;
   color: #f0c263;
 }
 
-.cost-estimate-panel > div > strong {
+.cost-estimate-panel > div > strong,
+.payment-panel > div > strong {
   display: block;
   color: #fffaf1;
   font-size: clamp(2rem, 5vw, 3rem);
   line-height: 1;
+}
+
+.payment-panel > div > span {
+  display: block;
+  margin-top: 8px;
+  color: rgba(255, 250, 241, 0.74);
 }
 
 .cost-estimate-panel ul {

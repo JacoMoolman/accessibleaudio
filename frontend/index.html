@@ -204,9 +204,20 @@
               </fieldset>
 
               <div class="actions">
-                <button type="submit">Upload TXT</button>
+                <button type="submit">Upload TXT and prepare payment</button>
               </div>
             </form>
+
+            <section class="payment-panel" id="payment-panel" aria-live="polite" hidden>
+              <div>
+                <p class="section-kicker">PayFast checkout</p>
+                <strong id="payment-amount">R 0.00</strong>
+                <span id="payment-book"></span>
+              </div>
+              <form id="payfast-form" method="post">
+                <button type="submit">Pay with PayFast</button>
+              </form>
+            </section>
           </section>
 
           <section class="panel files-panel" id="files-panel" hidden>

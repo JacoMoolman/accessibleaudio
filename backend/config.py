@@ -8,6 +8,13 @@ def _split_csv(value: str | None) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 @dataclass
 class Settings:
     supabase_url: str
@@ -23,6 +30,13 @@ class Settings:
     test_login_email: str = "momstats-test@accessibleaudio.local"
     test_login_password: str = "momstats-test-2026-07-04"
     test_login_user_id: str = "00000000-0000-4000-8000-000000000006"
+    payfast_merchant_id: str | None = None
+    payfast_merchant_key: str | None = None
+    payfast_passphrase: str | None = None
+    payfast_sandbox: bool = True
+    payfast_return_url: str | None = None
+    payfast_cancel_url: str | None = None
+    payfast_notify_url: str | None = None
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -46,6 +60,13 @@ class Settings:
             test_login_user_id=os.getenv(
                 "TEST_LOGIN_USER_ID", "00000000-0000-4000-8000-000000000006"
             ),
+            payfast_merchant_id=os.getenv("PAYFAST_MERCHANT_ID"),
+            payfast_merchant_key=os.getenv("PAYFAST_MERCHANT_KEY"),
+            payfast_passphrase=os.getenv("PAYFAST_PASSPHRASE"),
+            payfast_sandbox=_env_bool("PAYFAST_SANDBOX", True),
+            payfast_return_url=os.getenv("PAYFAST_RETURN_URL"),
+            payfast_cancel_url=os.getenv("PAYFAST_CANCEL_URL"),
+            payfast_notify_url=os.getenv("PAYFAST_NOTIFY_URL"),
         )
 
 

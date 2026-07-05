@@ -2,9 +2,11 @@ import json
 import re
 import uuid
 from collections.abc import Awaitable, Callable
+from hashlib import md5
 from typing import Annotated, Any
+from urllib.parse import quote_plus
 
-from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile, status
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -21,6 +23,39 @@ from backend.storage import (
 
 AuthDependency = Callable[[str | None], Awaitable[AuthenticatedUser]]
 BOOK_COST_PER_WORD_CENTS = 0.5
+OPTION_COSTS_CENTS = {
+    "also_wav": 2500,
+    "translate": 5000,
+    "make_video": 10000,
+}
+PAYFAST_CHECKOUT_SIGNATURE_FIELD_ORDER = [
+    "merchant_id",
+    "merchant_key",
+    "return_url",
+    "cancel_url",
+    "notify_url",
+    "name_first",
+    "name_last",
+    "email_address",
+    "cell_number",
+    "m_payment_id",
+    "amount",
+    "item_name",
+    "item_description",
+    "custom_int1",
+    "custom_int2",
+    "custom_int3",
+    "custom_int4",
+    "custom_int5",
+    "custom_str1",
+    "custom_str2",
+    "custom_str3",
+    "custom_str4",
+    "custom_str5",
+    "email_confirmation",
+    "confirmation_address",
+    "payment_method",
+]
 
 
 def create_app(
@@ -113,6 +148,7 @@ def create_app(
     @app.post("/process-file", status_code=status.HTTP_201_CREATED)
     async def process_file(
         user: Annotated[AuthenticatedUser, Depends(current_user)],
+        request: Request,
         file: Annotated[UploadFile, File()],
         narrator_voice: Annotated[str, Form()] = "",
         output_format: Annotated[str, Form()] = "mp3",
@@ -130,6 +166,8 @@ def create_app(
         except ValueError as exc:
             raise validation_http_error(exc) from exc
 
+        text = _decode_upload_text(content)
+        word_count = _count_words(text)
         upload_id = uuid.uuid4()
         key = build_upload_key(user.id, upload_id, file.filename or "upload.txt")
         bucket = object_storage.upload_bytes(
@@ -168,6 +206,17 @@ def create_app(
             "s3_key": key,
             "status": "uploaded",
         }
+        payment = _build_payfast_checkout(
+            settings=settings,
+            request=request,
+            user=user,
+            upload_id=upload_id,
+            filename=file.filename or "upload.txt",
+            word_count=word_count,
+            also_wav=also_wav,
+            translate=translate,
+            make_video=make_video,
+        )
         if _is_test_user(user, settings.test_login_user_id):
             saved = {
                 **record,
@@ -175,10 +224,12 @@ def create_app(
                 "processed_at": None,
                 "result_text": None,
                 "result_path": None,
+                "payment": payment,
             }
             test_uploads.insert(0, saved)
             return saved
-        return repository.create_uploaded_file(record)
+        saved = repository.create_uploaded_file(record)
+        return {**saved, "payment": payment}
 
     @app.post("/analyze-file")
     async def analyze_file(
@@ -195,7 +246,7 @@ def create_app(
         text = _decode_upload_text(content)
         chapters = _detect_chapters(text)
         word_count = _count_words(text)
-        estimated_cost_cents = word_count * BOOK_COST_PER_WORD_CENTS
+        estimated_cost_cents = _estimate_book_cost_cents(word_count)
         if float(estimated_cost_cents).is_integer():
             estimated_cost_cents = int(estimated_cost_cents)
         return {
@@ -230,6 +281,10 @@ def create_app(
         if record is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
         return record
+
+    @app.post("/payfast/notify")
+    async def payfast_notify() -> dict[str, bool]:
+        return {"ok": True}
 
     frontend_dir = _frontend_dir()
     if frontend_dir.exists():
@@ -373,6 +428,109 @@ def _bool_text(value: bool) -> str:
     return "true" if value else "false"
 
 
+def _estimate_book_cost_cents(word_count: int) -> float:
+    return word_count * BOOK_COST_PER_WORD_CENTS
+
+
+def _estimate_total_cost_cents(
+    *,
+    word_count: int,
+    also_wav: bool,
+    translate: bool,
+    make_video: bool,
+) -> float:
+    total = _estimate_book_cost_cents(word_count)
+    if also_wav:
+        total += OPTION_COSTS_CENTS["also_wav"]
+    if translate:
+        total += OPTION_COSTS_CENTS["translate"]
+    if make_video:
+        total += OPTION_COSTS_CENTS["make_video"]
+    return total
+
+
+def _build_payfast_checkout(
+    *,
+    settings: Settings,
+    request: Request,
+    user: AuthenticatedUser,
+    upload_id: uuid.UUID,
+    filename: str,
+    word_count: int,
+    also_wav: bool,
+    translate: bool,
+    make_video: bool,
+) -> dict[str, Any] | None:
+    if not (
+        settings.payfast_merchant_id
+        and settings.payfast_merchant_key
+        and settings.payfast_passphrase
+    ):
+        return None
+
+    base_url = str(request.base_url).rstrip("/")
+    amount_cents = _estimate_total_cost_cents(
+        word_count=word_count,
+        also_wav=also_wav,
+        translate=translate,
+        make_video=make_video,
+    )
+    option_labels = []
+    if also_wav:
+        option_labels.append("WAV")
+    if translate:
+        option_labels.append("translation")
+    if make_video:
+        option_labels.append("video")
+    option_text = ", ".join(option_labels) if option_labels else "standard MP3"
+    item_name = _limit_payfast_field(f"{filename} audiobook", 100)
+    item_description = _limit_payfast_field(
+        f"Accessible Audio production for {filename}: {word_count} words, {option_text}.",
+        255,
+    )
+    fields = {
+        "merchant_id": settings.payfast_merchant_id,
+        "merchant_key": settings.payfast_merchant_key,
+        "return_url": settings.payfast_return_url or f"{base_url}/submit?payment=success",
+        "cancel_url": settings.payfast_cancel_url or f"{base_url}/submit?payment=cancelled",
+        "notify_url": settings.payfast_notify_url or f"{base_url}/payfast/notify",
+        "email_address": user.email,
+        "m_payment_id": f"AA-{upload_id}",
+        "amount": _format_zar_amount(amount_cents),
+        "item_name": item_name,
+        "item_description": item_description,
+        "custom_str1": str(upload_id),
+        "custom_str2": user.id,
+    }
+    fields["signature"] = _generate_payfast_signature(
+        fields,
+        settings.payfast_passphrase,
+    )
+    host = "sandbox.payfast.co.za" if settings.payfast_sandbox else "www.payfast.co.za"
+    return {
+        "provider": "payfast",
+        "form_action": f"https://{host}/eng/process",
+        "amount_zar": _format_zar_cents(amount_cents),
+        "book_name": filename,
+        "fields": fields,
+    }
+
+
+def _generate_payfast_signature(fields: dict[str, Any], passphrase: str) -> str:
+    parts = []
+    for key in PAYFAST_CHECKOUT_SIGNATURE_FIELD_ORDER:
+        value = fields.get(key)
+        if value not in (None, ""):
+            parts.append(f"{key}={quote_plus(str(value).strip())}")
+    parts.append(f"passphrase={quote_plus(passphrase.strip())}")
+    return md5("&".join(parts).encode()).hexdigest()
+
+
+def _limit_payfast_field(value: str, max_length: int) -> str:
+    clean = " ".join(str(value).split())
+    return clean[:max_length]
+
+
 def _decode_upload_text(content: bytes) -> str:
     try:
         return content.decode("utf-8-sig")
@@ -472,6 +630,10 @@ def _count_words(text: str) -> int:
 
 def _format_zar_cents(cents: int | float) -> str:
     return f"R {float(cents) / 100:.2f}"
+
+
+def _format_zar_amount(cents: int | float) -> str:
+    return f"{float(cents) / 100:.2f}"
 
 
 def _frontend_dir():

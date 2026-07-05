@@ -26,6 +26,10 @@ const chapterList = document.getElementById("chapter-list");
 const costEstimatePanel = document.getElementById("cost-estimate-panel");
 const costEstimateTotal = document.getElementById("cost-estimate-total");
 const costEstimateBreakdown = document.getElementById("cost-estimate-breakdown");
+const paymentPanel = document.getElementById("payment-panel");
+const paymentAmount = document.getElementById("payment-amount");
+const paymentBook = document.getElementById("payment-book");
+const payfastForm = document.getElementById("payfast-form");
 const playNarratorSampleButton = document.getElementById("play-narrator-sample");
 const captchaSlot = document.getElementById("captcha-slot");
 const VOICE_SAMPLE_URLS = {
@@ -132,10 +136,17 @@ logoutButton.addEventListener("click", async () => {
 translateCheckbox.addEventListener("change", () => {
   translationOptions.hidden = !translateCheckbox.checked;
   updateCostEstimate();
+  renderPaymentCheckout(null);
 });
 
-document.getElementById("also-wav").addEventListener("change", updateCostEstimate);
-document.getElementById("make-video").addEventListener("change", updateCostEstimate);
+document.getElementById("also-wav").addEventListener("change", () => {
+  updateCostEstimate();
+  renderPaymentCheckout(null);
+});
+document.getElementById("make-video").addEventListener("change", () => {
+  updateCostEstimate();
+  renderPaymentCheckout(null);
+});
 
 fileInput.addEventListener("change", analyzeSelectedFile);
 
@@ -179,20 +190,25 @@ uploadForm.addEventListener("submit", async (event) => {
 
   setStatus("Uploading...");
   try {
-    await fetchJson("/process-file", {
+    const data = await fetchJson("/process-file", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${currentSession.access_token}`,
       },
       body: formData,
     });
+    renderPaymentCheckout(data.payment);
     uploadForm.reset();
     fileAnalysis = null;
     renderAnalysisResult();
     renderCostEstimate();
     setProductionOptionsEnabled(Boolean(fileAnalysis));
     translationOptions.hidden = true;
-    setStatus("Uploaded. Status is saved as uploaded for manual processing.");
+    setStatus(
+      paymentPanel.hidden
+        ? "Uploaded. Status is saved as uploaded for manual processing."
+        : "Uploaded. PayFast checkout is ready."
+    );
     await loadFiles();
   } catch (error) {
     setStatus(error.message, true);
@@ -200,6 +216,16 @@ uploadForm.addEventListener("submit", async (event) => {
 });
 
 refreshFilesButton.addEventListener("click", loadFiles);
+
+payfastForm.addEventListener("submit", (event) => {
+  if (!payfastForm.getAttribute("action")) {
+    event.preventDefault();
+    setStatus("Upload a book before paying.", true);
+    return;
+  }
+  event.preventDefault();
+  payfastForm.submit();
+});
 
 function credentials() {
   return {
@@ -245,6 +271,7 @@ function selectedTranslationVoices() {
 async function analyzeSelectedFile() {
   fileAnalysis = null;
   setProductionOptionsEnabled(Boolean(fileAnalysis));
+  renderPaymentCheckout(null);
   renderAnalysisResult("Detecting source language and chapters...");
   const file = fileInput.files[0];
   if (!file) {
@@ -306,6 +333,29 @@ function renderCostEstimate() {
   }
   costEstimatePanel.hidden = false;
   updateCostEstimate();
+}
+
+function renderPaymentCheckout(payment) {
+  payfastForm.innerHTML = `<button type="submit">Pay with PayFast</button>`;
+  payfastForm.removeAttribute("action");
+  paymentAmount.textContent = "R 0.00";
+  paymentBook.textContent = "";
+  paymentPanel.hidden = true;
+  if (!payment?.form_action || !payment?.fields) {
+    return;
+  }
+
+  payfastForm.action = payment.form_action;
+  paymentAmount.textContent = payment.amount_zar || payment.fields.amount || "R 0.00";
+  paymentBook.textContent = payment.book_name || payment.fields.item_name || "";
+  Object.entries(payment.fields).forEach(([name, value]) => {
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = name;
+    input.value = String(value ?? "");
+    payfastForm.appendChild(input);
+  });
+  paymentPanel.hidden = false;
 }
 
 function updateCostEstimate() {
