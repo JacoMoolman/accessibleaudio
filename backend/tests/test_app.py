@@ -277,9 +277,9 @@ def test_analyze_file_detects_language_and_chapter_titles():
         ],
         "chapter_count": 2,
         "word_count": 12,
-        "cost_per_word_cents": 1,
-        "estimated_cost_cents": 12,
-        "estimated_cost_zar": "R 0.12",
+        "cost_per_word_cents": 0.5,
+        "estimated_cost_cents": 6,
+        "estimated_cost_zar": "R 0.06",
     }
 
 
@@ -291,6 +291,8 @@ def test_submit_page_requires_file_analysis_before_options():
     assert response.status_code == 200
     assert 'id="analysis-panel"' in response.text
     assert 'id="analysis-result"' in response.text
+    assert 'id="cost-estimate-panel"' in response.text
+    assert 'id="cost-estimate-total"' in response.text
     assert 'id="production-options"' in response.text
     assert 'disabled data-requires-analysis' in response.text
 
@@ -377,8 +379,13 @@ def test_frontend_displays_analysis_cost_estimate():
     response = client.get("/app.js")
 
     assert response.status_code == 200
-    assert "estimated_cost_zar" in response.text
-    assert "Estimated cost" in response.text
+    assert "estimated_cost_cents" in response.text
+    assert "renderCostEstimate" in response.text
+    assert "OPTION_COSTS_CENTS" in response.text
+    assert "also_wav: 2500" in response.text
+    assert "translate: 5000" in response.text
+    assert "make_video: 10000" in response.text
+    assert "updateCostEstimate" in response.text
 
 
 def test_frontend_attempts_direct_test_login_before_supabase_auth():

@@ -23,6 +23,9 @@ const translationOptions = document.getElementById("translation-options");
 const productionOptions = document.getElementById("production-options");
 const analysisResult = document.getElementById("analysis-result");
 const chapterList = document.getElementById("chapter-list");
+const costEstimatePanel = document.getElementById("cost-estimate-panel");
+const costEstimateTotal = document.getElementById("cost-estimate-total");
+const costEstimateBreakdown = document.getElementById("cost-estimate-breakdown");
 const playNarratorSampleButton = document.getElementById("play-narrator-sample");
 const captchaSlot = document.getElementById("captcha-slot");
 const VOICE_SAMPLE_URLS = {
@@ -32,6 +35,11 @@ const VOICE_SAMPLE_URLS = {
   "Zulu Female": "/assets/voice-samples/zulu-female.wav",
   "Zulu Male": "/assets/voice-samples/zulu-male.mp3",
   "Xhosa Male": "/assets/voice-samples/xhosa-male.wav",
+};
+const OPTION_COSTS_CENTS = {
+  also_wav: 2500,
+  translate: 5000,
+  make_video: 10000,
 };
 let fileAnalysis = null;
 let currentVoiceSampleAudio = null;
@@ -123,7 +131,11 @@ logoutButton.addEventListener("click", async () => {
 
 translateCheckbox.addEventListener("change", () => {
   translationOptions.hidden = !translateCheckbox.checked;
+  updateCostEstimate();
 });
+
+document.getElementById("also-wav").addEventListener("change", updateCostEstimate);
+document.getElementById("make-video").addEventListener("change", updateCostEstimate);
 
 fileInput.addEventListener("change", analyzeSelectedFile);
 
@@ -177,6 +189,7 @@ uploadForm.addEventListener("submit", async (event) => {
     uploadForm.reset();
     fileAnalysis = null;
     renderAnalysisResult();
+    renderCostEstimate();
     setProductionOptionsEnabled(Boolean(fileAnalysis));
     translationOptions.hidden = true;
     setStatus("Uploaded. Status is saved as uploaded for manual processing.");
@@ -271,16 +284,59 @@ function renderAnalysisResult(message = "", isError = false) {
     analysisResult.textContent = message || "Choose a TXT file to detect the source language and chapters.";
     analysisResult.classList.toggle("error", isError);
     chapterList.innerHTML = "";
+    renderCostEstimate();
     return;
   }
 
-  const estimatedCost = fileAnalysis.estimated_cost_zar || "R 0.00";
   const wordCount = Number(fileAnalysis.word_count || 0).toLocaleString();
-  analysisResult.textContent = `${fileAnalysis.source_language || "Unknown"} detected, ${fileAnalysis.chapter_count} chapter${fileAnalysis.chapter_count === 1 ? "" : "s"} found. Estimated cost: ${estimatedCost} (${wordCount} words at 1c/word).`;
+  analysisResult.textContent = `${fileAnalysis.source_language || "Unknown"} detected, ${fileAnalysis.chapter_count} chapter${fileAnalysis.chapter_count === 1 ? "" : "s"} found (${wordCount} words at 0.5c/word).`;
   analysisResult.classList.remove("error");
   chapterList.innerHTML = fileAnalysis.chapters
     .map((chapter) => `<li>${escapeHtml(chapter.title)}</li>`)
     .join("");
+  renderCostEstimate();
+}
+
+function renderCostEstimate() {
+  if (!fileAnalysis) {
+    costEstimatePanel.hidden = true;
+    costEstimateTotal.textContent = "R 0.00";
+    costEstimateBreakdown.innerHTML = "";
+    return;
+  }
+  costEstimatePanel.hidden = false;
+  updateCostEstimate();
+}
+
+function updateCostEstimate() {
+  if (!fileAnalysis) {
+    return;
+  }
+  const baseCents = Number(fileAnalysis.estimated_cost_cents || 0);
+  const rows = [
+    {
+      label: `Book conversion (${Number(fileAnalysis.word_count || 0).toLocaleString()} words at 0.5c/word)`,
+      cents: baseCents,
+    },
+  ];
+  if (document.getElementById("also-wav").checked) {
+    rows.push({ label: "WAV output", cents: OPTION_COSTS_CENTS.also_wav });
+  }
+  if (translateCheckbox.checked) {
+    rows.push({ label: "Translation request", cents: OPTION_COSTS_CENTS.translate });
+  }
+  if (document.getElementById("make-video").checked) {
+    rows.push({ label: "Video request", cents: OPTION_COSTS_CENTS.make_video });
+  }
+  const totalCents = rows.reduce((sum, row) => sum + row.cents, 0);
+  costEstimateTotal.textContent = formatZarFromCents(totalCents);
+  costEstimateBreakdown.innerHTML = rows
+    .map((row) => `<li><span>${escapeHtml(row.label)}</span><strong>${formatZarFromCents(row.cents)}</strong></li>`)
+    .join("");
+}
+
+function formatZarFromCents(cents) {
+  return `R ${(Number(cents || 0) / 100).toFixed(2)}`;
 }
 
 function setProductionOptionsEnabled(enabled) {

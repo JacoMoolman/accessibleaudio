@@ -303,6 +303,49 @@ h2 {
   line-height: 1.5;
 }
 
+.cost-estimate-panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(240, 194, 99, 0.32);
+  border-radius: 6px;
+  background: rgba(240, 194, 99, 0.08);
+}
+
+.cost-estimate-panel .section-kicker {
+  margin-bottom: 6px;
+  color: #f0c263;
+}
+
+.cost-estimate-panel > div > strong {
+  display: block;
+  color: #fffaf1;
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1;
+}
+
+.cost-estimate-panel ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cost-estimate-panel li {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 250, 241, 0.12);
+  color: rgba(255, 250, 241, 0.74);
+}
+
+.cost-estimate-panel li strong {
+  color: #f0c263;
+  white-space: nowrap;
+}
+
 .production-options {
   display: grid;
   gap: 18px;
