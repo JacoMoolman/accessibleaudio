@@ -343,6 +343,16 @@ def test_frontend_uses_real_voice_sample_audio_files():
     assert "SpeechSynthesisUtterance" not in response.text
 
 
+def test_frontend_does_not_display_success_message_for_voice_sample_playback():
+    client, _, _ = make_client()
+
+    response = client.get("/app.js")
+
+    assert response.status_code == 200
+    assert "Playing sample for" not in response.text
+    assert "Could not play the ${voiceName} sample file." in response.text
+
+
 def test_real_voice_sample_assets_exist():
     voice_sample_dir = Path(__file__).resolve().parents[2] / "frontend" / "assets" / "voice-samples"
 

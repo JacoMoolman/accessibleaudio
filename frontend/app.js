@@ -312,7 +312,6 @@ function playVoiceSample(voiceName) {
       setStatus(`Could not play the ${voiceName} sample file.`, true);
     });
   }
-  setStatus(`Playing sample for ${voiceName}.`);
 }
 
 function cssEscape(value) {
