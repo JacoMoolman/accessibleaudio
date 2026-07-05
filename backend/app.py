@@ -123,6 +123,15 @@ def create_app(
 
     @app.post("/test-login")
     def test_login(payload: dict[str, str]) -> dict[str, Any]:
+        if not (
+            settings.enable_test_login
+            and settings.test_login_email
+            and settings.test_login_password
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Test login is not enabled",
+            )
         email = (payload.get("email") or "").strip().lower()
         password = payload.get("password") or ""
         if (
@@ -523,7 +532,7 @@ def _generate_payfast_signature(fields: dict[str, Any], passphrase: str) -> str:
         if value not in (None, ""):
             parts.append(f"{key}={quote_plus(str(value).strip())}")
     parts.append(f"passphrase={quote_plus(passphrase.strip())}")
-    return md5("&".join(parts).encode()).hexdigest()
+    return md5("&".join(parts).encode(), usedforsecurity=False).hexdigest()
 
 
 def _limit_payfast_field(value: str, max_length: int) -> str:

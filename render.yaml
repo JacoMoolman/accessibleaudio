@@ -28,3 +28,25 @@ services:
         sync: false
       - key: ALLOWED_ORIGINS
         value: https://accessibleaudio.co.za,https://www.accessibleaudio.co.za,https://accessible-audio-submit.onrender.com
+      - key: ENABLE_TEST_LOGIN
+        sync: false
+      - key: TEST_LOGIN_EMAIL
+        sync: false
+      - key: TEST_LOGIN_PASSWORD
+        sync: false
+      - key: TEST_LOGIN_USER_ID
+        sync: false
+      - key: PAYFAST_MERCHANT_ID
+        sync: false
+      - key: PAYFAST_MERCHANT_KEY
+        sync: false
+      - key: PAYFAST_PASSPHRASE
+        sync: false
+      - key: PAYFAST_SANDBOX
+        sync: false
+      - key: PAYFAST_RETURN_URL
+        sync: false
+      - key: PAYFAST_CANCEL_URL
+        sync: false
+      - key: PAYFAST_NOTIFY_URL
+        sync: false

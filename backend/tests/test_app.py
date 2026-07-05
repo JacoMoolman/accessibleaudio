@@ -92,6 +92,9 @@ def make_client():
         aws_region="us-east-1",
         s3_bucket_name="accessible-audio-submissions",
         allowed_origins=["http://localhost:8000"],
+        enable_test_login=True,
+        test_login_email="momstats-test@accessibleaudio.local",
+        test_login_password="momstats-test-2026-07-04",
         payfast_merchant_id="10000100",
         payfast_merchant_key="46f0cd694581a",
         payfast_passphrase="test-passphrase",
@@ -120,7 +123,7 @@ def expected_payfast_signature(payload, passphrase="test-passphrase"):
         if value not in (None, ""):
             parts.append(f"{key}={quote_plus(str(value).strip())}")
     parts.append(f"passphrase={quote_plus(passphrase.strip())}")
-    return md5("&".join(parts).encode()).hexdigest()
+    return md5("&".join(parts).encode(), usedforsecurity=False).hexdigest()
 
 
 def test_health_returns_ok():
@@ -473,12 +476,40 @@ def test_test_login_rejects_wrong_password():
     assert response.status_code == 401
 
 
+def test_test_login_is_disabled_by_default():
+    settings = Settings(
+        supabase_url="https://example.supabase.co",
+        supabase_service_role_key="service-role",
+        supabase_anon_key="anon-key",
+        turnstile_site_key=None,
+    )
+    app = create_app(
+        settings=settings,
+        repository=FakeRepository(),
+        object_storage=FakeObjectStorage(),
+    )
+    client = TestClient(app)
+
+    response = client.post(
+        "/test-login",
+        json={
+            "email": "momstats-test@accessibleaudio.local",
+            "password": "momstats-test-2026-07-04",
+        },
+    )
+
+    assert response.status_code == 404
+
+
 def test_test_login_token_uploads_without_supabase_confirmation():
     settings = Settings(
         supabase_url="https://example.supabase.co",
         supabase_service_role_key="service-role",
         supabase_anon_key="anon-key",
         turnstile_site_key=None,
+        enable_test_login=True,
+        test_login_email="momstats-test@accessibleaudio.local",
+        test_login_password="momstats-test-2026-07-04",
     )
     storage = FakeObjectStorage()
     app = create_app(
