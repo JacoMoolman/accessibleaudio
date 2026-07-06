@@ -135,11 +135,15 @@ $files = @(
   "index.html",
   "audiobooks.html",
   "contact.html",
+  "submit/index.html",
+  "submit/app.js",
+  "submit/styles.css",
   "robots.txt",
   "sitemap.xml",
   "favicon.svg",
   "styles.css",
-  "scripts/video-embeds.js"
+  "scripts/video-embeds.js",
+  "private_uploads/.htaccess"
 )
 
 $assetFiles = Get-ChildItem -LiteralPath "assets" -Recurse -File |
@@ -147,6 +151,17 @@ $assetFiles = Get-ChildItem -LiteralPath "assets" -Recurse -File |
   ForEach-Object { $_.FullName.Substring((Resolve-Path -LiteralPath ".").Path.Length + 1) }
 
 $files += $assetFiles
+
+$submitAssetFiles = Get-ChildItem -LiteralPath "submit/assets" -Recurse -File |
+  ForEach-Object { $_.FullName.Substring((Resolve-Path -LiteralPath ".").Path.Length + 1) }
+
+$files += $submitAssetFiles
+
+$apiFiles = Get-ChildItem -LiteralPath "api" -File -Filter "*.php" |
+  Where-Object { $_.Name -notlike "config.local*" } |
+  ForEach-Object { $_.FullName.Substring((Resolve-Path -LiteralPath ".").Path.Length + 1) }
+
+$files += $apiFiles
 
 foreach ($file in $files) {
   if (-not (Test-Path -LiteralPath $file)) {

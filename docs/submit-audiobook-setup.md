@@ -1,94 +1,84 @@
 # Submit Audiobook Setup
 
-This repo now contains a Render-ready FastAPI app for authenticated `.txt`
-submissions. The app stores the uploaded file in AWS S3 and writes metadata to
-Supabase Postgres.
+The submit flow is now packaged for the existing Hostinger website instead of
+Render. The browser app lives in `submit/`, the PHP endpoints live in `api/`,
+and uploaded TXT files are stored locally under `private_uploads/`.
+
+## Runtime Shape
+
+- `https://accessibleaudio.co.za/submit/` serves the submit page.
+- `/api/config.php` returns public Supabase Auth config.
+- `/api/process-file.php` verifies the Supabase user session, saves the TXT
+  file locally, writes `options.txt`, and returns the price/payment payload.
+- `/api/files.php` lists the logged-in user's local upload records.
+- `private_uploads/.htaccess` blocks direct HTTP reads of stored uploads.
+
+The submit page does chapter detection, language detection, and word counting in
+browser JavaScript before upload. The server repeats only validation, pricing,
+storage, and PayFast payload generation.
 
 ## Supabase
 
-1. Create or open the Accessible Audio Supabase project.
-2. In SQL Editor, run `supabase/uploaded_files.sql`.
-3. Enable email/password authentication in Supabase Auth.
-4. Add these frontend URLs to Auth redirect/site settings after Render deploy:
-   - `https://accessible-audio-submit.onrender.com/submit`
-   - `https://accessibleaudio.co.za`
-   - `https://www.accessibleaudio.co.za`
-5. To use Google sign-in, configure the Google provider in Supabase Auth.
-   The Google OAuth callback URL is:
-   `https://cphullkbhvpphzslitxv.supabase.co/auth/v1/callback`
-6. To require a human check on email/password auth, create a free Cloudflare
-   Turnstile site, enable CAPTCHA protection in Supabase Auth with the
-   Turnstile secret key, then set the public site key in Render as
-   `TURNSTILE_SITE_KEY`.
+Supabase is still used for login and Google Auth. The browser and PHP backend
+use only the public anon key. The current public values are committed in
+`api/config.public.php` so the Hostinger deploy works without a private config
+file.
 
-## S3
+Use `api/config.local.php` only for optional server-local overrides:
 
-Create a private bucket for submissions. The planned bucket name in config is:
-
-```text
-accessible-audio-submissions
+```php
+<?php
+return [
+    'SUPABASE_URL' => 'https://your-project.supabase.co',
+    'SUPABASE_ANON_KEY' => 'your-public-anon-key',
+    'TURNSTILE_SITE_KEY' => null,
+];
 ```
 
-If that global S3 bucket name is unavailable, create a unique variant and set
-Render `S3_BUCKET_NAME` to the exact bucket name.
+`api/config.local.php` is ignored by Git and the deploy script does not upload it
+automatically.
 
-Uploaded objects are stored under:
-
-```text
-users/{user_id}/uploads/{upload_id}/{safe_filename}.txt
-```
-
-Use a restricted AWS IAM access key for Render. It only needs object write/read
-permissions for this one bucket.
-
-## Render
-
-Create a free Render Web Service from this GitHub repo. Render can read
-`render.yaml`, or configure manually:
+Update Supabase Auth redirect/site settings to include:
 
 ```text
-Build Command: pip install -r requirements.txt
-Start Command: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+https://accessibleaudio.co.za/submit/
+https://www.accessibleaudio.co.za/submit/
 ```
 
-Set these Render environment variables:
+## Local Upload Storage
+
+Uploads are stored on Hostinger at:
 
 ```text
-SUPABASE_URL
-SUPABASE_ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY
-AWS_ACCESS_KEY_ID
-AWS_SECRET_ACCESS_KEY
-AWS_REGION=us-east-1
-S3_BUCKET_NAME=accessible-audio-submissions
-MAX_UPLOAD_BYTES=10485760
-TURNSTILE_SITE_KEY=
-ALLOWED_ORIGINS=https://accessibleaudio.co.za,https://www.accessibleaudio.co.za,https://accessible-audio-submit.onrender.com
+private_uploads/users/{sha256_user_id}/uploads/{upload_id}/{safe_filename}.txt
 ```
 
-Do not put AWS, Supabase service role, OpenAI, Anthropic, or Render tokens in
-frontend code.
+Do not put AWS keys in this repo or on Hostinger for this flow. The Hostinger
+submit backend does not read S3 or AWS environment variables.
 
-The backend verifies Supabase user JWTs through Supabase Auth's `/auth/v1/user`
-endpoint using `SUPABASE_URL` and `SUPABASE_ANON_KEY`. `SUPABASE_JWT_SECRET` is
-optional and is not required for this deployment path.
+## PayFast
 
-## Local Run
+PayFast is optional. If these values are absent, uploads and pricing still work
+but no PayFast form is returned:
 
-Install dependencies:
+```php
+'PAYFAST_MERCHANT_ID' => null,
+'PAYFAST_MERCHANT_KEY' => null,
+'PAYFAST_PASSPHRASE' => null,
+'PAYFAST_SANDBOX' => true,
+'PAYFAST_RETURN_URL' => 'https://accessibleaudio.co.za/submit/?payment=success',
+'PAYFAST_CANCEL_URL' => 'https://accessibleaudio.co.za/submit/?payment=cancelled',
+'PAYFAST_NOTIFY_URL' => 'https://accessibleaudio.co.za/api/payfast-notify.php',
+```
+
+## Deploy
+
+Use the existing Hostinger FTP deploy path:
 
 ```powershell
-python -m pip install -r requirements.txt
+.\scripts\deploy-hostinger.ps1
 ```
 
-Set the same environment variables locally, then run:
-
-```powershell
-uvicorn backend.main:app --reload
-```
-
-Open:
-
-```text
-http://127.0.0.1:8000/submit
-```
+The deploy script uploads the public site, `submit/`, `api/`, and
+`private_uploads/.htaccess`. It does not upload `api/config.local.php`, `.env`,
+or ignored upload contents.

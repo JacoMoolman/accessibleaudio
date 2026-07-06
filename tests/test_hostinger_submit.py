@@ -1,0 +1,80 @@
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def read(path: str) -> str:
+    return (ROOT / path).read_text(encoding="utf-8")
+
+
+def test_hostinger_submit_frontend_uses_php_api_and_client_side_analysis():
+    html = read("submit/index.html")
+    app_js = read("submit/app.js")
+
+    assert 'href="./styles.css"' in html
+    assert 'src="./app.js"' in html
+    assert 'fetchJson("/api/config.php")' in app_js
+    assert 'fetchJson("/api/process-file.php"' in app_js
+    assert 'fetchJson("/api/files.php"' in app_js
+    assert 'analyzeTextFile(file)' in app_js
+    assert 'fetchJson("/analyze-file"' not in app_js
+    assert 'fetchJson("/process-file"' not in app_js
+    assert 'fetchJson("/files"' not in app_js
+
+
+def test_hostinger_php_backend_stores_uploads_locally_without_aws_or_s3_keys():
+    api_files = list((ROOT / "api").glob("*.php"))
+    assert api_files
+
+    combined = "\n".join(path.read_text(encoding="utf-8") for path in api_files)
+    forbidden = [
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+        "S3_BUCKET_NAME",
+        "boto3",
+        "aws_secret",
+    ]
+    for value in forbidden:
+        assert value not in combined
+
+    assert "private_uploads" in combined
+    assert "hostinger-local" in combined
+    assert "SUPABASE_ANON_KEY" in combined
+    assert "SUPABASE_SERVICE_ROLE_KEY" not in combined
+
+
+def test_hostinger_local_upload_directory_is_not_publicly_readable():
+    htaccess = read("private_uploads/.htaccess")
+    assert "Require all denied" in htaccess
+    assert "Deny from all" in htaccess
+
+
+def test_hostinger_deploy_script_uploads_submit_and_api_but_not_private_secrets():
+    deploy_script = read("scripts/deploy-hostinger.ps1")
+
+    assert '"submit/index.html"' in deploy_script
+    assert '"submit/app.js"' in deploy_script
+    assert '"submit/styles.css"' in deploy_script
+    assert 'Get-ChildItem -LiteralPath "api"' in deploy_script
+    assert '"private_uploads/.htaccess"' in deploy_script
+
+    assert '"api/config.local.php"' not in deploy_script
+    assert '"api/config.local.example.php"' not in deploy_script
+    assert "AWS_ACCESS_KEY_ID" not in deploy_script
+    assert "AWS_SECRET_ACCESS_KEY" not in deploy_script
+
+
+def test_hostinger_setup_docs_and_env_template_do_not_point_at_render_or_s3():
+    env_example = read(".env.example")
+    setup_doc = read("docs/submit-audiobook-setup.md")
+
+    for content in (env_example, setup_doc):
+        assert "accessible-audio-submit.onrender.com" not in content
+        assert "AWS_ACCESS_KEY_ID" not in content
+        assert "AWS_SECRET_ACCESS_KEY" not in content
+        assert "S3_BUCKET_NAME" not in content
+
+    assert "Hostinger" in setup_doc
+    assert "private_uploads" in setup_doc
+    assert not (ROOT / "render.yaml").exists()

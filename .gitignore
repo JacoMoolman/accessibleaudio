@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+__pycache__/
 
 # Build outputs
 dist/
@@ -10,6 +11,9 @@ out/
 .env
 .env.*
 !.env.example
+api/config.local.php
+private_uploads/*
+!private_uploads/.htaccess
 
 # Logs
 *.log

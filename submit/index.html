@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Submit Audiobook | Accessible Audio</title>
+    <link rel="icon" href="https://accessibleaudio.co.za/favicon.svg?v=20260612-private" type="image/svg+xml">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <header class="site-header" aria-label="Primary navigation">
+      <a class="brand" href="https://accessibleaudio.co.za/" aria-label="Accessible Audio home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        Accessible Audio
+      </a>
+      <nav class="nav-links" aria-label="Main menu">
+        <a href="https://accessibleaudio.co.za/#service">Service</a>
+        <a href="https://accessibleaudio.co.za/#private">Local production</a>
+        <a href="https://accessibleaudio.co.za/#languages">Languages</a>
+        <a href="https://accessibleaudio.co.za/audiobooks.html">Audiobooks</a>
+        <a href="https://accessibleaudio.co.za/contact.html">Contact</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="submit-hero" aria-labelledby="page-title">
+        <div class="submit-hero-content">
+          <p class="eyebrow">Manuscript upload</p>
+          <h1 id="page-title">Submit Audiobook</h1>
+          <p class="hero-lead">
+            Upload a UTF-8 .txt manuscript for manual audiobook processing.
+            Your account keeps each upload and its production options together.
+          </p>
+        </div>
+      </section>
+
+      <section class="submit-section" aria-label="Audiobook submission form">
+        <div class="submit-intro">
+          <div>
+            <p class="section-kicker">Secure submission</p>
+            <h2>Send a title for review.</h2>
+          </div>
+          <p>
+            Start with one plain-text manuscript, choose the narrator voice,
+            and note any optional translation, WAV, or video requests. Files are
+            stored under your account for follow-up processing.
+          </p>
+        </div>
+
+        <div class="submit-grid">
+          <section class="panel auth-panel" id="auth-panel">
+            <div class="panel-header">
+              <h2>Account</h2>
+              <p id="auth-state">Sign up or log in to upload a book.</p>
+            </div>
+            <form id="auth-form">
+              <div class="auth-controls grid-form" id="auth-controls">
+                <label>
+                  Email
+                  <input id="email" type="email" autocomplete="email" required>
+                </label>
+                <label>
+                  Password
+                  <input id="password" type="password" autocomplete="current-password" required minlength="6">
+                </label>
+                <div class="captcha-slot" id="captcha-slot" hidden></div>
+                <div class="actions">
+                  <button type="button" id="login-button">Log in</button>
+                  <button type="button" id="signup-button" class="secondary">Sign up</button>
+                  <button type="button" id="google-button" class="secondary">Continue with Google</button>
+                </div>
+              </div>
+              <div class="actions">
+                <button type="button" id="logout-button" class="ghost" hidden>Log out</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="panel upload-panel" id="upload-panel" hidden>
+            <div class="panel-header">
+              <h2>Upload Book</h2>
+              <p>
+                Upload an audiobook-ready TXT file. Everything in the TXT file
+                will be read out loud.
+              </p>
+            </div>
+
+            <form id="upload-form" class="stack-form">
+              <label>
+                Book text file
+                <input id="book-file" type="file" accept=".txt,text/plain" required>
+              </label>
+
+              <section class="analysis-panel" id="analysis-panel" aria-live="polite">
+                <div class="analysis-state" id="analysis-result">
+                  Choose a TXT file to detect the source language and chapters.
+                </div>
+                <ul class="chapter-list" id="chapter-list"></ul>
+              </section>
+
+              <input id="source-language" name="source_language" type="hidden">
+              <input id="chapter-titles" name="chapter_titles" type="hidden">
+
+              <section class="cost-estimate-panel" id="cost-estimate-panel" aria-live="polite" hidden>
+                <div>
+                  <p class="section-kicker">Estimated cost</p>
+                  <strong id="cost-estimate-total">R 0.00</strong>
+                </div>
+                <ul id="cost-estimate-breakdown"></ul>
+              </section>
+
+              <fieldset id="production-options" class="production-options" disabled data-requires-analysis>
+                <label>
+                  Narrator voice for original language
+                  <div class="select-action">
+                    <select id="narrator-voice" required>
+                      <option value="">Select voice</option>
+                      <option>English Female</option>
+                      <option>English Male</option>
+                      <option>Afrikaans Male</option>
+                      <option>Zulu Female</option>
+                      <option>Zulu Male</option>
+                      <option>Xhosa Male</option>
+                    </select>
+                    <button type="button" class="secondary" id="play-narrator-sample">Play sample</button>
+                  </div>
+                </label>
+
+                <fieldset>
+                  <legend>Output Format</legend>
+                  <label class="inline">
+                    <input type="radio" name="output-format" value="mp3" checked>
+                    MP3
+                  </label>
+                  <label class="inline">
+                    <input id="also-wav" type="checkbox">
+                    Also create WAV
+                  </label>
+                </fieldset>
+
+                <fieldset>
+                  <legend>Translation</legend>
+                  <label class="inline">
+                    <input id="translate" type="checkbox">
+                    Translate this book
+                  </label>
+                  <div id="translation-options" class="option-grid" hidden>
+                    <label>
+                      <span class="inline">
+                        <input type="checkbox" name="translation-language" value="Afrikaans">
+                        Afrikaans
+                      </span>
+                      <select name="translation-voice-Afrikaans" aria-label="Afrikaans translation voice">
+                        <option>Afrikaans Male</option>
+                        <option>English Female</option>
+                        <option>English Male</option>
+                        <option>Zulu Female</option>
+                        <option>Zulu Male</option>
+                        <option>Xhosa Male</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span class="inline">
+                        <input type="checkbox" name="translation-language" value="Zulu">
+                        Zulu
+                      </span>
+                      <select name="translation-voice-Zulu" aria-label="Zulu translation voice">
+                        <option>Zulu Female</option>
+                        <option>Zulu Male</option>
+                        <option>English Female</option>
+                        <option>English Male</option>
+                        <option>Afrikaans Male</option>
+                        <option>Xhosa Male</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span class="inline">
+                        <input type="checkbox" name="translation-language" value="English">
+                        English
+                      </span>
+                      <select name="translation-voice-English" aria-label="English translation voice">
+                        <option>English Female</option>
+                        <option>English Male</option>
+                        <option>Afrikaans Male</option>
+                        <option>Zulu Female</option>
+                        <option>Zulu Male</option>
+                        <option>Xhosa Male</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div id="translation-voice-options" class="field-note">
+                    Translation voice choices are saved separately from the original narrator.
+                  </div>
+                </fieldset>
+
+                <fieldset>
+                  <legend>Video</legend>
+                  <label class="inline">
+                    <input id="make-video" type="checkbox">
+                    Make video
+                  </label>
+                  <p class="field-note">For now: one image per chapter. This is saved as a request only.</p>
+                </fieldset>
+              </fieldset>
+
+              <div class="actions">
+                <button type="submit">Upload TXT and prepare payment</button>
+              </div>
+            </form>
+
+            <section class="payment-panel" id="payment-panel" aria-live="polite" hidden>
+              <div>
+                <p class="section-kicker">PayFast checkout</p>
+                <strong id="payment-amount">R 0.00</strong>
+                <span id="payment-book"></span>
+              </div>
+              <form id="payfast-form" method="post">
+                <button type="submit">Pay with PayFast</button>
+              </form>
+            </section>
+          </section>
+
+          <section class="panel files-panel" id="files-panel" hidden>
+            <div class="panel-header">
+              <h2>Your Uploads</h2>
+              <button type="button" class="secondary" id="refresh-files">Refresh</button>
+            </div>
+            <div id="files-list" class="files-list"></div>
+          </section>
+        </div>
+
+        <p class="status" id="status" role="status"></p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>Accessible Audio</p>
+      <a href="mailto:audio@accessibleaudio.co.za">audio@accessibleaudio.co.za</a>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
