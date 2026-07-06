@@ -143,6 +143,7 @@ $files = @(
   "favicon.svg",
   "styles.css",
   "scripts/video-embeds.js",
+  "api/.htaccess",
   "private_uploads/.htaccess"
 )
 

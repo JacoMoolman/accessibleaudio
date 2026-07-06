@@ -94,7 +94,14 @@ function json_error(string $message, int $status): never
 
 function require_bearer_token(): string
 {
-    $header = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+    $header = $_SERVER['HTTP_AUTHORIZATION']
+        ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
+        ?? $_SERVER['Authorization']
+        ?? '';
+    if (!$header && function_exists('getallheaders')) {
+        $headers = getallheaders();
+        $header = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+    }
     if (!preg_match('/^Bearer\s+(.+)$/i', $header, $matches)) {
         json_error('Missing bearer token', 401);
     }

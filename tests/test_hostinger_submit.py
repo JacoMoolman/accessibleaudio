@@ -42,6 +42,8 @@ def test_hostinger_php_backend_stores_uploads_locally_without_aws_or_s3_keys():
     assert "hostinger-local" in combined
     assert "SUPABASE_ANON_KEY" in combined
     assert "SUPABASE_SERVICE_ROLE_KEY" not in combined
+    assert "REDIRECT_HTTP_AUTHORIZATION" in combined
+    assert "getallheaders" in combined
 
 
 def test_hostinger_local_upload_directory_is_not_publicly_readable():
@@ -57,6 +59,7 @@ def test_hostinger_deploy_script_uploads_submit_and_api_but_not_private_secrets(
     assert '"submit/app.js"' in deploy_script
     assert '"submit/styles.css"' in deploy_script
     assert 'Get-ChildItem -LiteralPath "api"' in deploy_script
+    assert '"api/.htaccess"' in deploy_script
     assert '"private_uploads/.htaccess"' in deploy_script
 
     assert '"api/config.local.php"' not in deploy_script
