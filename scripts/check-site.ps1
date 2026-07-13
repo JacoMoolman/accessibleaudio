@@ -5,6 +5,7 @@ $indexPath = Join-Path $root "index.html"
 $audiobooksPath = Join-Path $root "audiobooks.html"
 $contactPath = Join-Path $root "contact.html"
 $faqPath = Join-Path $root "faq.html"
+$voiceSamplesPath = Join-Path $root "voice-samples.html"
 $robotsPath = Join-Path $root "robots.txt"
 $sitemapPath = Join-Path $root "sitemap.xml"
 $stylesPath = Join-Path $root "styles.css"
@@ -13,6 +14,7 @@ $logoSvgPath = Join-Path $root "assets\accessible-audio-logo-round.svg"
 $logoPngPath = Join-Path $root "assets\accessible-audio-logo-round-1024.png"
 $deployPath = Join-Path $root "scripts\deploy-hostinger.ps1"
 $videoScriptPath = Join-Path $root "scripts\video-embeds.js"
+$voiceSamplesScriptPath = Join-Path $root "scripts\voice-samples.js"
 
 function Assert-FileExists {
   param([string] $Path)
@@ -58,6 +60,7 @@ Assert-FileExists $indexPath
 Assert-FileExists $audiobooksPath
 Assert-FileExists $contactPath
 Assert-FileExists $faqPath
+Assert-FileExists $voiceSamplesPath
 Assert-FileExists $robotsPath
 Assert-FileExists $sitemapPath
 Assert-FileExists $stylesPath
@@ -66,16 +69,19 @@ Assert-FileExists $logoSvgPath
 Assert-FileExists $logoPngPath
 Assert-FileExists $deployPath
 Assert-FileExists $videoScriptPath
+Assert-FileExists $voiceSamplesScriptPath
 
 $index = Get-Content -LiteralPath $indexPath -Raw
 $audiobooks = Get-Content -LiteralPath $audiobooksPath -Raw
 $contact = Get-Content -LiteralPath $contactPath -Raw
 $faq = Get-Content -LiteralPath $faqPath -Raw
+$voiceSamples = Get-Content -LiteralPath $voiceSamplesPath -Raw
 $robots = Get-Content -LiteralPath $robotsPath -Raw
 $sitemap = Get-Content -LiteralPath $sitemapPath -Raw
 $styles = Get-Content -LiteralPath $stylesPath -Raw
 $deploy = Get-Content -LiteralPath $deployPath -Raw
 $videoScript = Get-Content -LiteralPath $videoScriptPath -Raw
+$voiceSamplesScript = Get-Content -LiteralPath $voiceSamplesScriptPath -Raw
 $combined = "$index`n$audiobooks`n$contact"
 
 Assert-Contains $index "Accessible Audio" "homepage"
@@ -84,6 +90,7 @@ Assert-Contains $index '<meta property="og:url" content="https://accessibleaudio
 Assert-Contains $index '<meta property="og:title" content="Accessible Audio | Locally Run AI Audiobooks">' "homepage"
 Assert-Contains $index '<meta name="twitter:card" content="summary_large_image">' "homepage"
 Assert-Contains $index "audiobooks.html" "homepage"
+Assert-Contains $index "voice-samples.html" "homepage"
 Assert-NotContains $combined "https://accessible-audio-submit.onrender.com" "public pages"
 Assert-Contains $index "Hear AI audiobook editions across languages." "homepage"
 Assert-Contains $index "Browse audiobook samples" "homepage"
@@ -148,6 +155,13 @@ Assert-Contains $faq ".docx" "FAQ page"
 Assert-Contains $faq ".md" "FAQ page"
 Assert-Contains $faq "You retain ownership of your book." "FAQ page"
 Assert-Contains $faq "within 30 days" "FAQ page"
+Assert-Contains $voiceSamples '<link rel="canonical" href="https://accessibleaudio.co.za/voice-samples.html">' "voice samples page"
+Assert-Contains $voiceSamples "Local AI voices" "voice samples page"
+Assert-Contains $voiceSamples "Gemini voices" "voice samples page"
+Assert-NotContains $voiceSamples "<select" "voice samples page"
+Assert-Contains $voiceSamplesScript "count: 5" "voice sample script"
+Assert-Contains $voiceSamplesScript "count: 30" "voice sample script"
+Assert-Contains $voiceSamplesScript "Voice ${number}" "voice sample script"
 Assert-NotContains $index "faq.html" "homepage"
 Assert-NotContains $index "scripts/video-embeds.js" "homepage"
 Assert-Contains $audiobooks "scripts/video-embeds.js?v=20260626-nocookie1" "audiobook library"
@@ -204,6 +218,8 @@ Assert-Contains $contact "mailto:audio@accessibleaudio.co.za" "contact page"
 Assert-Contains $deploy "Get-ChildItem" "deployment script"
 Assert-Contains $deploy "audiobooks.html" "deployment script"
 Assert-Contains $deploy '"faq.html"' "deployment script"
+Assert-Contains $deploy '"voice-samples.html"' "deployment script"
+Assert-Contains $deploy '"scripts/voice-samples.js"' "deployment script"
 Assert-Contains $deploy "robots.txt" "deployment script"
 Assert-Contains $deploy "sitemap.xml" "deployment script"
 Assert-Contains $robots "User-agent: *" "robots.txt"
@@ -212,6 +228,7 @@ Assert-Contains $robots "Sitemap: https://accessibleaudio.co.za/sitemap.xml" "ro
 Assert-Contains $sitemap "<loc>https://accessibleaudio.co.za/</loc>" "sitemap.xml"
 Assert-Contains $sitemap "<loc>https://accessibleaudio.co.za/audiobooks.html</loc>" "sitemap.xml"
 Assert-Contains $sitemap "<loc>https://accessibleaudio.co.za/contact.html</loc>" "sitemap.xml"
+Assert-Contains $sitemap "<loc>https://accessibleaudio.co.za/voice-samples.html</loc>" "sitemap.xml"
 
 Assert-NotContains $index "youtube.com/watch" "homepage"
 Assert-NotContains $audiobooks "youtube.com/watch" "audiobook library"
@@ -229,6 +246,13 @@ foreach ($asset in @(
   "assets\aa-photo-samples.webp"
 )) {
   Assert-FileExists (Join-Path $root $asset)
+}
+
+foreach ($number in 1..5) {
+  Assert-FileExists (Join-Path $root ("assets\voice-samples\local\voice-{0:D2}.wav" -f $number))
+}
+foreach ($number in 1..30) {
+  Assert-FileExists (Join-Path $root ("assets\voice-samples\gemini\voice-{0:D2}.mp3" -f $number))
 }
 
 Write-Host "Site checks passed."

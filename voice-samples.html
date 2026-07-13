@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Listen to Accessible Audio local AI and Gemini voice samples.">
+    <title>Voice Samples | Accessible Audio</title>
+    <link rel="canonical" href="https://accessibleaudio.co.za/voice-samples.html">
+    <meta property="og:site_name" content="Accessible Audio">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Voice Samples | Accessible Audio">
+    <meta property="og:description" content="Listen to local AI and Gemini voice samples from Accessible Audio.">
+    <meta property="og:url" content="https://accessibleaudio.co.za/voice-samples.html">
+    <meta property="og:image" content="https://accessibleaudio.co.za/assets/aa-photo-samples.webp">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="favicon.svg?v=20260612-private" type="image/svg+xml">
+    <link rel="stylesheet" href="styles.css?v=20260713-voices1">
+  </head>
+  <body>
+    <header class="site-header" aria-label="Primary navigation">
+      <a class="brand" href="index.html" aria-label="Accessible Audio home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        Accessible Audio
+      </a>
+      <nav class="nav-links" aria-label="Main menu">
+        <a href="index.html#service">Service</a>
+        <a href="index.html#private">Local production</a>
+        <a href="index.html#languages">Languages</a>
+        <a href="audiobooks.html">Audiobooks</a>
+        <a href="voice-samples.html" aria-current="page">Voice samples</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="library-hero voice-samples-hero" aria-labelledby="page-title">
+        <div class="hero-content">
+          <p class="eyebrow">Voice samples</p>
+          <h1 id="page-title">Choose a voice to hear.</h1>
+          <p class="hero-lead">
+            Listen to samples generated from the same short audiobook-style
+            passages. Select a voice provider, then play or stop any sample.
+          </p>
+        </div>
+      </section>
+
+      <section class="section voice-sample-section" aria-labelledby="provider-title">
+        <div class="section-copy voice-sample-intro">
+          <p class="section-kicker">Two production paths</p>
+          <h2 id="provider-title">Local AI or Gemini cloud voices.</h2>
+          <p>
+            Local samples are created with our OmniVoice setup. Gemini samples
+            are created with Google Gemini Text to Speech. Voice labels are kept
+            simple so you can focus on the sound.
+          </p>
+        </div>
+
+        <div class="voice-provider-buttons" role="tablist" aria-label="Voice provider">
+          <button class="voice-provider-button is-selected" type="button" role="tab" aria-selected="true" aria-controls="local-voices" id="local-tab" data-provider="local">Local AI voices</button>
+          <button class="voice-provider-button" type="button" role="tab" aria-selected="false" aria-controls="gemini-voices" id="gemini-tab" data-provider="gemini">Gemini voices</button>
+        </div>
+
+        <section class="voice-panel" id="local-voices" role="tabpanel" aria-labelledby="local-tab" data-panel="local">
+          <h3>Local AI voices</h3>
+          <div class="voice-card-grid" id="local-voice-list"></div>
+        </section>
+        <section class="voice-panel" id="gemini-voices" role="tabpanel" aria-labelledby="gemini-tab" data-panel="gemini" hidden>
+          <h3>Gemini voices</h3>
+          <div class="voice-card-grid" id="gemini-voice-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Accessible Audio</span>
+      <span>AI audiobook editions for more accessible reading.</span>
+    </footer>
+    <script src="scripts/voice-samples.js?v=20260713-voices1"></script>
+  </body>
+</html>

@@ -135,6 +135,7 @@ $files = @(
   "index.html",
   "audiobooks.html",
   "contact.html",
+  "voice-samples.html",
   "faq.html",
   "submit/index.html",
   "submit/app.js",
@@ -144,6 +145,7 @@ $files = @(
   "favicon.svg",
   "styles.css",
   "scripts/video-embeds.js",
+  "scripts/voice-samples.js",
   "api/.htaccess",
   "private_uploads/.htaccess"
 )
