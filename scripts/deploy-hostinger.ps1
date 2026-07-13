@@ -135,6 +135,7 @@ $files = @(
   "index.html",
   "audiobooks.html",
   "contact.html",
+  "faq.html",
   "submit/index.html",
   "submit/app.js",
   "submit/styles.css",

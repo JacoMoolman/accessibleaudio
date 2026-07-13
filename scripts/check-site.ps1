@@ -4,6 +4,7 @@ $root = Split-Path -Parent $PSScriptRoot
 $indexPath = Join-Path $root "index.html"
 $audiobooksPath = Join-Path $root "audiobooks.html"
 $contactPath = Join-Path $root "contact.html"
+$faqPath = Join-Path $root "faq.html"
 $robotsPath = Join-Path $root "robots.txt"
 $sitemapPath = Join-Path $root "sitemap.xml"
 $stylesPath = Join-Path $root "styles.css"
@@ -56,6 +57,7 @@ function Assert-NotMatch {
 Assert-FileExists $indexPath
 Assert-FileExists $audiobooksPath
 Assert-FileExists $contactPath
+Assert-FileExists $faqPath
 Assert-FileExists $robotsPath
 Assert-FileExists $sitemapPath
 Assert-FileExists $stylesPath
@@ -68,6 +70,7 @@ Assert-FileExists $videoScriptPath
 $index = Get-Content -LiteralPath $indexPath -Raw
 $audiobooks = Get-Content -LiteralPath $audiobooksPath -Raw
 $contact = Get-Content -LiteralPath $contactPath -Raw
+$faq = Get-Content -LiteralPath $faqPath -Raw
 $robots = Get-Content -LiteralPath $robotsPath -Raw
 $sitemap = Get-Content -LiteralPath $sitemapPath -Raw
 $styles = Get-Content -LiteralPath $stylesPath -Raw
@@ -138,6 +141,14 @@ Assert-Contains $styles "accessible-audio-logo-round.svg?v=20260624-logo1" "styl
 Assert-Contains $index "accessible-audio-logo-round.svg?v=20260624-logo1" "homepage"
 Assert-Contains $index "favicon.svg?v=20260612-private" "homepage"
 Assert-Contains $contact "favicon.svg?v=20260612-private" "contact page"
+Assert-Contains $faq '<meta name="robots" content="noindex, nofollow">' "FAQ page"
+Assert-Contains $faq "Frequently asked questions." "FAQ page"
+Assert-Contains $faq ".txt" "FAQ page"
+Assert-Contains $faq ".docx" "FAQ page"
+Assert-Contains $faq ".md" "FAQ page"
+Assert-Contains $faq "You retain ownership of your book." "FAQ page"
+Assert-Contains $faq "within 30 days" "FAQ page"
+Assert-NotContains $index "faq.html" "homepage"
 Assert-NotContains $index "scripts/video-embeds.js" "homepage"
 Assert-Contains $audiobooks "scripts/video-embeds.js?v=20260626-nocookie1" "audiobook library"
 Assert-Contains $videoScript "https://www.youtube-nocookie.com/embed/" "video script"
@@ -192,6 +203,7 @@ Assert-Contains $contact "audio@accessibleaudio.co.za" "contact page"
 Assert-Contains $contact "mailto:audio@accessibleaudio.co.za" "contact page"
 Assert-Contains $deploy "Get-ChildItem" "deployment script"
 Assert-Contains $deploy "audiobooks.html" "deployment script"
+Assert-Contains $deploy '"faq.html"' "deployment script"
 Assert-Contains $deploy "robots.txt" "deployment script"
 Assert-Contains $deploy "sitemap.xml" "deployment script"
 Assert-Contains $robots "User-agent: *" "robots.txt"
