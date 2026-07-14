@@ -70,6 +70,28 @@ def test_homepage_polish_is_deployed_and_respects_reduced_motion():
     assert "@media (prefers-reduced-motion: reduce)" in styles
 
 
+def test_faq_is_public_and_linked_from_the_site():
+    faq = read("faq.html")
+    sitemap = read("sitemap.xml")
+
+    assert "noindex" not in faq.lower()
+    assert '<a href="faq.html" aria-current="page">FAQ</a>' in faq
+    assert "<loc>https://accessibleaudio.co.za/faq.html</loc>" in sitemap
+
+    public_pages = [
+        read("index.html"),
+        read("audiobooks.html"),
+        read("contact.html"),
+        read("voice-samples.html"),
+    ]
+    for page in public_pages:
+        assert '<a href="faq.html">FAQ</a>' in page
+
+    submit_pages = [read("submit/index.html"), read("frontend/index.html")]
+    for page in submit_pages:
+        assert '<a href="https://accessibleaudio.co.za/faq.html">FAQ</a>' in page
+
+
 def test_hostinger_php_backend_stores_uploads_locally_without_aws_or_s3_keys():
     api_files = list((ROOT / "api").glob("*.php"))
     assert api_files
