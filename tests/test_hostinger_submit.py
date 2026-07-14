@@ -21,6 +21,8 @@ def test_hostinger_submit_frontend_uses_php_api_and_client_side_analysis():
     assert 'fetchJson("/analyze-file"' not in app_js
     assert 'fetchJson("/process-file"' not in app_js
     assert 'fetchJson("/files"' not in app_js
+    assert 'redirectTo: `${window.location.origin}/submit/`' in app_js
+    assert "onrender.com" not in app_js
 
 
 def test_user_facing_copy_does_not_require_utf8():
