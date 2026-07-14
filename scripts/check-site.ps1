@@ -14,6 +14,7 @@ $logoSvgPath = Join-Path $root "assets\accessible-audio-logo-round.svg"
 $logoPngPath = Join-Path $root "assets\accessible-audio-logo-round-1024.png"
 $deployPath = Join-Path $root "scripts\deploy-hostinger.ps1"
 $videoScriptPath = Join-Path $root "scripts\video-embeds.js"
+$siteMotionScriptPath = Join-Path $root "scripts\site-motion.js"
 $voiceSamplesScriptPath = Join-Path $root "scripts\voice-samples.js"
 
 function Assert-FileExists {
@@ -69,6 +70,7 @@ Assert-FileExists $logoSvgPath
 Assert-FileExists $logoPngPath
 Assert-FileExists $deployPath
 Assert-FileExists $videoScriptPath
+Assert-FileExists $siteMotionScriptPath
 Assert-FileExists $voiceSamplesScriptPath
 
 $index = Get-Content -LiteralPath $indexPath -Raw
@@ -81,6 +83,7 @@ $sitemap = Get-Content -LiteralPath $sitemapPath -Raw
 $styles = Get-Content -LiteralPath $stylesPath -Raw
 $deploy = Get-Content -LiteralPath $deployPath -Raw
 $videoScript = Get-Content -LiteralPath $videoScriptPath -Raw
+$siteMotionScript = Get-Content -LiteralPath $siteMotionScriptPath -Raw
 $voiceSamplesScript = Get-Content -LiteralPath $voiceSamplesScriptPath -Raw
 $combined = "$index`n$audiobooks`n$contact"
 
@@ -91,6 +94,10 @@ Assert-Contains $index '<meta property="og:title" content="Accessible Audio | Lo
 Assert-Contains $index '<meta name="twitter:card" content="summary_large_image">' "homepage"
 Assert-Contains $index "audiobooks.html" "homepage"
 Assert-Contains $index "voice-samples.html" "homepage"
+Assert-Contains $index 'class="home-page"' "homepage"
+Assert-Contains $index "hero-signal" "homepage"
+Assert-Contains $index "styles.css?v=20260714-motion1" "homepage"
+Assert-Contains $index "scripts/site-motion.js?v=20260714-motion1" "homepage"
 Assert-NotContains $combined "https://accessible-audio-submit.onrender.com" "public pages"
 Assert-Contains $index "Hear AI audiobook editions across languages." "homepage"
 Assert-Contains $index "Browse audiobook samples" "homepage"
@@ -131,7 +138,6 @@ Assert-NotContains $audiobooks "data-video-id=""L16Rhnthe0o""" "audiobook librar
 Assert-NotContains $audiobooks "data-video-id=""NIVOpA9Qs_s""" "audiobook library"
 Assert-NotContains $audiobooks "data-video-id=""HniPyrcqrRA""" "audiobook library"
 Assert-NotContains $audiobooks "data-video-id=""PujBGYcoSC0""" "audiobook library"
-Assert-Contains $index "styles.css?v=20260705-dark1" "homepage"
 Assert-Contains $audiobooks "styles.css?v=20260705-dark1" "audiobook library"
 Assert-Contains $contact "styles.css?v=20260705-dark1" "contact page"
 Assert-Contains $contact '<link rel="canonical" href="https://accessibleaudio.co.za/contact.html">' "contact page"
@@ -224,6 +230,7 @@ Assert-Contains $deploy "audiobooks.html" "deployment script"
 Assert-Contains $deploy '"faq.html"' "deployment script"
 Assert-Contains $deploy '"voice-samples.html"' "deployment script"
 Assert-Contains $deploy '"scripts/voice-samples.js"' "deployment script"
+Assert-Contains $deploy '"scripts/site-motion.js"' "deployment script"
 Assert-Contains $deploy "robots.txt" "deployment script"
 Assert-Contains $deploy "sitemap.xml" "deployment script"
 Assert-Contains $robots "User-agent: *" "robots.txt"
@@ -239,6 +246,10 @@ Assert-NotContains $audiobooks "youtube.com/watch" "audiobook library"
 Assert-NotContains $combined "chapter-by-chapter" "public pages"
 Assert-NotContains $combined "chapter by chapter" "public pages"
 Assert-NotContains $combined "how I do it" "public pages"
+Assert-Contains $siteMotionScript "IntersectionObserver" "homepage motion script"
+Assert-Contains $siteMotionScript "prefers-reduced-motion: reduce" "homepage motion script"
+Assert-Contains $siteMotionScript "requestAnimationFrame" "homepage motion script"
+Assert-Contains $styles "@media (prefers-reduced-motion: reduce)" "stylesheet"
 
 foreach ($asset in @(
   "assets\accessible-audio-hero.png",

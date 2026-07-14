@@ -29,9 +29,9 @@
     <link rel="preload" href="assets/accessible-audio-logo-round.svg?v=20260624-logo1" as="image">
     <link rel="preload" href="assets/accessible-audio-hero.png?v=20260607-no-mic" as="image">
     <link rel="preload" href="assets/accessibility-language-bridge.png?v=20260607-audio" as="image">
-    <link rel="stylesheet" href="styles.css?v=20260705-dark1">
+    <link rel="stylesheet" href="styles.css?v=20260714-motion1">
   </head>
-  <body>
+  <body class="home-page">
     <header class="site-header" aria-label="Primary navigation">
       <a class="brand" href="index.html" aria-label="Accessible Audio home">
         <span class="brand-mark" aria-hidden="true"></span>
@@ -51,7 +51,12 @@
       <section class="hero" aria-labelledby="page-title">
         <div class="hero-media" aria-hidden="true"></div>
         <div class="hero-content">
-          <p class="eyebrow">AI audiobook production</p>
+          <div class="hero-kicker-row">
+            <p class="eyebrow">AI audiobook production</p>
+            <span class="hero-signal" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            </span>
+          </div>
           <h1 id="page-title">Accessible Audio</h1>
           <p class="hero-lead">
             Convert books and textbooks into clear AI-generated audiobook
@@ -242,5 +247,6 @@
       <p>Accessible Audio</p>
       <a href="mailto:audio@accessibleaudio.co.za">audio@accessibleaudio.co.za</a>
     </footer>
+    <script src="scripts/site-motion.js?v=20260714-motion1"></script>
   </body>
 </html>

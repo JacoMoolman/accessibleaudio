@@ -144,6 +144,7 @@ $files = @(
   "sitemap.xml",
   "favicon.svg",
   "styles.css",
+  "scripts/site-motion.js",
   "scripts/video-embeds.js",
   "scripts/voice-samples.js",
   "api/.htaccess",

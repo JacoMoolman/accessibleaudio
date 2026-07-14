@@ -53,6 +53,23 @@ def test_voice_sample_controls_use_the_dark_site_palette():
     assert "background: var(--soft);" in styles
 
 
+def test_homepage_polish_is_deployed_and_respects_reduced_motion():
+    html = read("index.html")
+    styles = read("styles.css")
+    motion = read("scripts/site-motion.js")
+    deploy = read("scripts/deploy-hostinger.ps1")
+
+    assert 'class="home-page"' in html
+    assert "hero-signal" in html
+    assert "styles.css?v=20260714-motion1" in html
+    assert "scripts/site-motion.js?v=20260714-motion1" in html
+    assert '"scripts/site-motion.js"' in deploy
+    assert "IntersectionObserver" in motion
+    assert "requestAnimationFrame" in motion
+    assert "prefers-reduced-motion: reduce" in motion
+    assert "@media (prefers-reduced-motion: reduce)" in styles
+
+
 def test_hostinger_php_backend_stores_uploads_locally_without_aws_or_s3_keys():
     api_files = list((ROOT / "api").glob("*.php"))
     assert api_files
