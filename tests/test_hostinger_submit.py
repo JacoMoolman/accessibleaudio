@@ -13,7 +13,7 @@ def test_hostinger_submit_frontend_uses_php_api_and_client_side_analysis():
     app_js = read("submit/app.js")
 
     assert 'href="./styles.css"' in html
-    assert 'src="./app.js"' in html
+    assert 'src="./app.js?v=20260714-voices3"' in html
     assert 'fetchJson("/api/config.php")' in app_js
     assert 'fetchJson("/api/process-file.php"' in app_js
     assert 'fetchJson("/api/files.php"' in app_js
@@ -46,11 +46,37 @@ def test_voice_sample_controls_use_the_dark_site_palette():
     html = read("voice-samples.html")
     styles = read("styles.css")
 
-    assert "styles.css?v=20260714-voices2" in html
+    assert "styles.css?v=20260714-voices3" in html
     assert ".voice-card-actions button:focus-visible" in styles
     assert "#fffdf7" not in styles
     assert "background: rgba(7, 61, 53, 0.72);" in styles
     assert "background: var(--soft);" in styles
+
+
+def test_numbered_voice_catalog_is_anonymous_and_shared_with_submit():
+    page = read("voice-samples.html")
+    page_js = read("scripts/voice-samples.js")
+    catalog_js = read("scripts/voice-catalog.js")
+    submit_html = read("submit/index.html")
+    submit_js = read("submit/app.js")
+
+    public_voice_interface = "\n".join((page, page_js, catalog_js)).lower()
+    for provider_name in ("gemini", "google text", "omnivoice", "voice provider", "local ai"):
+        assert provider_name not in public_voice_interface
+
+    assert "const voiceCount = 35" in catalog_js
+    assert "/assets/voice-samples/catalog/voice-" in catalog_js
+    assert "window.ACCESSIBLE_AUDIO_VOICES" in page_js
+    assert "../scripts/voice-catalog.js?v=20260714-voices3" in submit_html
+    assert "The numbers match the" in submit_html
+    assert 'href="https://accessibleaudio.co.za/voice-samples.html">Voice samples</a>' in submit_html
+    assert "VOICE_CATALOG.map" in submit_js
+    assert "populateNarratorVoices" in submit_js
+
+    for number in range(1, 6):
+        assert (ROOT / f"assets/voice-samples/catalog/voice-{number:02}.wav").stat().st_size > 10_000
+    for number in range(6, 36):
+        assert (ROOT / f"assets/voice-samples/catalog/voice-{number:02}.mp3").stat().st_size > 10_000
 
 
 def test_homepage_polish_is_deployed_and_respects_reduced_motion():

@@ -32,14 +32,10 @@ const paymentBook = document.getElementById("payment-book");
 const payfastForm = document.getElementById("payfast-form");
 const playNarratorSampleButton = document.getElementById("play-narrator-sample");
 const captchaSlot = document.getElementById("captcha-slot");
-const VOICE_SAMPLE_URLS = {
-  "English Female": "./assets/voice-samples/english-female.wav",
-  "English Male": "./assets/voice-samples/english-male.mp3",
-  "Afrikaans Male": "./assets/voice-samples/afrikaans-male.mp3",
-  "Zulu Female": "./assets/voice-samples/zulu-female.wav",
-  "Zulu Male": "./assets/voice-samples/zulu-male.mp3",
-  "Xhosa Male": "./assets/voice-samples/xhosa-male.wav",
-};
+const VOICE_CATALOG = window.ACCESSIBLE_AUDIO_VOICES || [];
+const VOICE_SAMPLE_URLS = Object.fromEntries(
+  VOICE_CATALOG.map((voice) => [voice.label, voice.sampleUrl])
+);
 const OPTION_COSTS_CENTS = {
   also_wav: 2500,
   translate: 5000,
@@ -48,7 +44,18 @@ const OPTION_COSTS_CENTS = {
 let fileAnalysis = null;
 let currentVoiceSampleAudio = null;
 
+populateNarratorVoices();
 init();
+
+function populateNarratorVoices() {
+  const select = document.getElementById("narrator-voice");
+  VOICE_CATALOG.forEach((voice) => {
+    const option = document.createElement("option");
+    option.value = voice.label;
+    option.textContent = voice.label;
+    select.append(option);
+  });
+}
 
 async function init() {
   try {

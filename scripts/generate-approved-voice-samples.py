@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Generate issue #38's approved samples through the running AudioBookMaker app.
 
-The public site receives provider-separated, anonymous files.  The actual
-voice names stay in this local-generation manifest only, so the page can show
-the requested "Voice 1", "Voice 2", and so on.
+The public site receives one anonymous, numbered catalogue. The actual voice
+names stay in this local-generation manifest only, so the public sample page
+and submission form can share the same "Voice 1" through "Voice 35" labels.
 """
 
 from __future__ import annotations
@@ -24,8 +24,8 @@ ROOT = Path(__file__).resolve().parents[1]
 DIALOGUES = ROOT / "docs" / "voice-sample-dialogues.md"
 AUDIOBOOKMAKER = Path(r"G:\Projects\AUDIOBOOK\AudioBookMaker")
 PREVIEWS = AUDIOBOOKMAKER / "previews"
-OUTPUT = ROOT / "assets" / "voice-samples"
-MANIFEST = OUTPUT / "manifest.json"
+OUTPUT = ROOT / "assets" / "voice-samples" / "catalog"
+MANIFEST = ROOT / "docs" / "voice-sample-generation-manifest.json"
 APP = "http://127.0.0.1:3250"
 
 
@@ -81,7 +81,7 @@ def wait_for_file(path: Path, newer_than: float, timeout: int = 1800) -> None:
 
 
 def create_local(entry: dict) -> Path:
-    destination = OUTPUT / "local" / f"voice-{entry['number']:02}.wav"
+    destination = OUTPUT / f"voice-{entry['number']:02}.wav"
     source = PREVIEWS / f"{entry['voice']}_preview.wav"
     started = time.time()
     response = post_json(
@@ -104,7 +104,7 @@ def create_local(entry: dict) -> Path:
 
 
 def create_gemini(entry: dict) -> Path:
-    destination = OUTPUT / "gemini" / f"voice-{entry['number'] - 5:02}.mp3"
+    destination = OUTPUT / f"voice-{entry['number']:02}.mp3"
     source = PREVIEWS / f"gemini_tts_{entry['voice']}_en.mp3"
     started = time.time()
     response = post_json(
@@ -137,7 +137,7 @@ def main() -> int:
         manifest_entries.append(
             {
                 "provider": entry["provider"],
-                "public_label": f"Voice {entry['number'] if entry['provider'] == 'local' else entry['number'] - 5}",
+                "public_label": f"Voice {entry['number']}",
                 "source_voice": entry["voice"],
                 "file": destination.relative_to(ROOT).as_posix(),
                 "bytes": destination.stat().st_size,

@@ -15,7 +15,10 @@ $logoPngPath = Join-Path $root "assets\accessible-audio-logo-round-1024.png"
 $deployPath = Join-Path $root "scripts\deploy-hostinger.ps1"
 $videoScriptPath = Join-Path $root "scripts\video-embeds.js"
 $siteMotionScriptPath = Join-Path $root "scripts\site-motion.js"
+$voiceCatalogScriptPath = Join-Path $root "scripts\voice-catalog.js"
 $voiceSamplesScriptPath = Join-Path $root "scripts\voice-samples.js"
+$submitIndexPath = Join-Path $root "submit\index.html"
+$submitAppPath = Join-Path $root "submit\app.js"
 
 function Assert-FileExists {
   param([string] $Path)
@@ -71,7 +74,10 @@ Assert-FileExists $logoPngPath
 Assert-FileExists $deployPath
 Assert-FileExists $videoScriptPath
 Assert-FileExists $siteMotionScriptPath
+Assert-FileExists $voiceCatalogScriptPath
 Assert-FileExists $voiceSamplesScriptPath
+Assert-FileExists $submitIndexPath
+Assert-FileExists $submitAppPath
 
 $index = Get-Content -LiteralPath $indexPath -Raw
 $audiobooks = Get-Content -LiteralPath $audiobooksPath -Raw
@@ -84,7 +90,10 @@ $styles = Get-Content -LiteralPath $stylesPath -Raw
 $deploy = Get-Content -LiteralPath $deployPath -Raw
 $videoScript = Get-Content -LiteralPath $videoScriptPath -Raw
 $siteMotionScript = Get-Content -LiteralPath $siteMotionScriptPath -Raw
+$voiceCatalogScript = Get-Content -LiteralPath $voiceCatalogScriptPath -Raw
 $voiceSamplesScript = Get-Content -LiteralPath $voiceSamplesScriptPath -Raw
+$submitIndex = Get-Content -LiteralPath $submitIndexPath -Raw
+$submitApp = Get-Content -LiteralPath $submitAppPath -Raw
 $combined = "$index`n$audiobooks`n$contact"
 
 Assert-Contains $index "Accessible Audio" "homepage"
@@ -163,16 +172,22 @@ Assert-Contains $faq ".md" "FAQ page"
 Assert-Contains $faq "You retain ownership of your book." "FAQ page"
 Assert-Contains $faq "within 30 days" "FAQ page"
 Assert-Contains $voiceSamples '<link rel="canonical" href="https://accessibleaudio.co.za/voice-samples.html">' "voice samples page"
-Assert-Contains $voiceSamples "Local AI voices" "voice samples page"
-Assert-Contains $voiceSamples "Gemini voices" "voice samples page"
-Assert-Contains $voiceSamples "styles.css?v=20260714-voices2" "voice samples page"
+Assert-Contains $voiceSamples "Numbered voice catalogue" "voice samples page"
+Assert-Contains $voiceSamples "same number appears in the" "voice samples page"
+Assert-Contains $voiceSamples "styles.css?v=20260714-voices3" "voice samples page"
 Assert-NotContains $voiceSamples "<select" "voice samples page"
+Assert-NotMatch "$voiceSamples`n$voiceSamplesScript`n$voiceCatalogScript" "(?i)gemini|google text|omnivoice|voice provider|local ai" "public voice sample interface"
 Assert-Contains $styles ".voice-card-actions button:focus-visible" "stylesheet"
 Assert-Contains $styles "background: var(--soft);" "stylesheet"
 Assert-NotContains $styles "#fffdf7" "stylesheet"
-Assert-Contains $voiceSamplesScript "count: 5" "voice sample script"
-Assert-Contains $voiceSamplesScript "count: 30" "voice sample script"
-Assert-Contains $voiceSamplesScript "Voice ${number}" "voice sample script"
+Assert-Contains $voiceCatalogScript "const voiceCount = 35" "voice catalog script"
+Assert-Contains $voiceCatalogScript "/assets/voice-samples/catalog/voice-" "voice catalog script"
+Assert-Contains $voiceSamplesScript "window.ACCESSIBLE_AUDIO_VOICES" "voice sample script"
+Assert-Contains $submitIndex "../scripts/voice-catalog.js?v=20260714-voices3" "submit page"
+Assert-Contains $submitIndex "The numbers match the" "submit page"
+Assert-Contains $submitIndex 'href="https://accessibleaudio.co.za/voice-samples.html">Voice samples</a>' "submit page"
+Assert-Contains $submitApp "VOICE_CATALOG.map" "submit app"
+Assert-Contains $submitApp "populateNarratorVoices" "submit app"
 Assert-Contains $index '<a href="faq.html">FAQ</a>' "homepage"
 Assert-Contains $audiobooks '<a href="faq.html">FAQ</a>' "audiobook library"
 Assert-Contains $contact '<a href="faq.html">FAQ</a>' "contact page"
@@ -234,6 +249,7 @@ Assert-Contains $deploy "audiobooks.html" "deployment script"
 Assert-Contains $deploy '"faq.html"' "deployment script"
 Assert-Contains $deploy '"voice-samples.html"' "deployment script"
 Assert-Contains $deploy '"scripts/voice-samples.js"' "deployment script"
+Assert-Contains $deploy '"scripts/voice-catalog.js"' "deployment script"
 Assert-Contains $deploy '"scripts/site-motion.js"' "deployment script"
 Assert-Contains $deploy "robots.txt" "deployment script"
 Assert-Contains $deploy "sitemap.xml" "deployment script"
@@ -269,10 +285,10 @@ foreach ($asset in @(
 }
 
 foreach ($number in 1..5) {
-  Assert-FileExists (Join-Path $root ("assets\voice-samples\local\voice-{0:D2}.wav" -f $number))
+  Assert-FileExists (Join-Path $root ("assets\voice-samples\catalog\voice-{0:D2}.wav" -f $number))
 }
-foreach ($number in 1..30) {
-  Assert-FileExists (Join-Path $root ("assets\voice-samples\gemini\voice-{0:D2}.mp3" -f $number))
+foreach ($number in 6..35) {
+  Assert-FileExists (Join-Path $root ("assets\voice-samples\catalog\voice-{0:D2}.mp3" -f $number))
 }
 
 Write-Host "Site checks passed."

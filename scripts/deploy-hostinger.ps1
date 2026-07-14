@@ -146,6 +146,7 @@ $files = @(
   "styles.css",
   "scripts/site-motion.js",
   "scripts/video-embeds.js",
+  "scripts/voice-catalog.js",
   "scripts/voice-samples.js",
   "api/.htaccess",
   "private_uploads/.htaccess"
