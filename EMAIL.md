@@ -2,7 +2,7 @@
 
 ## Mailbox
 
-- Email address: `audio@accessibleaudio.co.za`
+- Recipient address: configured privately as `EMAIL_ADDRESS` in `.env.local`
 - Webmail: `https://mail.hostinger.com`
 
 ## Incoming Mail

@@ -15,6 +15,7 @@ $logoPngPath = Join-Path $root "assets\accessible-audio-logo-round-1024.png"
 $deployPath = Join-Path $root "scripts\deploy-hostinger.ps1"
 $videoScriptPath = Join-Path $root "scripts\video-embeds.js"
 $siteMotionScriptPath = Join-Path $root "scripts\site-motion.js"
+$contactScriptPath = Join-Path $root "scripts\contact.js"
 $voiceCatalogScriptPath = Join-Path $root "scripts\voice-catalog.js"
 $voiceSamplesScriptPath = Join-Path $root "scripts\voice-samples.js"
 $submitIndexPath = Join-Path $root "submit\index.html"
@@ -74,6 +75,7 @@ Assert-FileExists $logoPngPath
 Assert-FileExists $deployPath
 Assert-FileExists $videoScriptPath
 Assert-FileExists $siteMotionScriptPath
+Assert-FileExists $contactScriptPath
 Assert-FileExists $voiceCatalogScriptPath
 Assert-FileExists $voiceSamplesScriptPath
 Assert-FileExists $submitIndexPath
@@ -90,6 +92,7 @@ $styles = Get-Content -LiteralPath $stylesPath -Raw
 $deploy = Get-Content -LiteralPath $deployPath -Raw
 $videoScript = Get-Content -LiteralPath $videoScriptPath -Raw
 $siteMotionScript = Get-Content -LiteralPath $siteMotionScriptPath -Raw
+$contactScript = Get-Content -LiteralPath $contactScriptPath -Raw
 $voiceCatalogScript = Get-Content -LiteralPath $voiceCatalogScriptPath -Raw
 $voiceSamplesScript = Get-Content -LiteralPath $voiceSamplesScriptPath -Raw
 $submitIndex = Get-Content -LiteralPath $submitIndexPath -Raw
@@ -148,7 +151,7 @@ Assert-NotContains $audiobooks "data-video-id=""NIVOpA9Qs_s""" "audiobook librar
 Assert-NotContains $audiobooks "data-video-id=""HniPyrcqrRA""" "audiobook library"
 Assert-NotContains $audiobooks "data-video-id=""PujBGYcoSC0""" "audiobook library"
 Assert-Contains $audiobooks "styles.css?v=20260705-dark1" "audiobook library"
-Assert-Contains $contact "styles.css?v=20260705-dark1" "contact page"
+Assert-Contains $contact "styles.css?v=20260714-contact1" "contact page"
 Assert-Contains $contact '<link rel="canonical" href="https://accessibleaudio.co.za/contact.html">' "contact page"
 Assert-Contains $contact '<meta property="og:url" content="https://accessibleaudio.co.za/contact.html">' "contact page"
 Assert-Contains $contact '<meta property="og:title" content="Contact | Accessible Audio AI Audiobooks">' "contact page"
@@ -242,8 +245,14 @@ Assert-Contains $audiobooks "Alice In Wonderland" "audiobook library"
 Assert-Contains $audiobooks "Character voices" "audiobook library"
 Assert-NotMatch $combined "(?<!isi)\bZulu\b" "public pages"
 Assert-NotContains $index "AI Audiobook<br><strong>Sample edition" "homepage"
-Assert-Contains $contact "audio@accessibleaudio.co.za" "contact page"
-Assert-Contains $contact "mailto:audio@accessibleaudio.co.za" "contact page"
+Assert-NotContains "$index`n$audiobooks`n$faq`n$contact" "mailto:" "public pages"
+Assert-NotContains "$index`n$audiobooks`n$faq`n$contact" "@accessibleaudio.co.za" "public pages"
+Assert-Contains $contact 'id="contact-form"' "contact page"
+Assert-Contains $contact 'id="contact-captcha"' "contact page"
+Assert-Contains $contact "www.google.com/recaptcha/api.js" "contact page"
+Assert-Contains $contact "scripts/contact.js?v=20260714-contact1" "contact page"
+Assert-Contains $contactScript 'fetch("/api/contact.php"' "contact script"
+Assert-Contains $contactScript "window.grecaptcha.getResponse" "contact script"
 Assert-Contains $deploy "Get-ChildItem" "deployment script"
 Assert-Contains $deploy "audiobooks.html" "deployment script"
 Assert-Contains $deploy '"faq.html"' "deployment script"
@@ -251,6 +260,7 @@ Assert-Contains $deploy '"voice-samples.html"' "deployment script"
 Assert-Contains $deploy '"scripts/voice-samples.js"' "deployment script"
 Assert-Contains $deploy '"scripts/voice-catalog.js"' "deployment script"
 Assert-Contains $deploy '"scripts/site-motion.js"' "deployment script"
+Assert-Contains $deploy '"scripts/contact.js"' "deployment script"
 Assert-Contains $deploy "robots.txt" "deployment script"
 Assert-Contains $deploy "sitemap.xml" "deployment script"
 Assert-Contains $robots "User-agent: *" "robots.txt"

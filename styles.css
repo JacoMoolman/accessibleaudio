@@ -1181,6 +1181,10 @@ h3 {
   color: rgba(255, 250, 241, 0.78);
 }
 
+.contact-hero .button {
+  width: fit-content;
+}
+
 .contact-grid {
   background: var(--green-dark);
   color: #fffaf1;
@@ -1208,18 +1212,88 @@ h3 {
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.contact-email {
-  width: fit-content;
-  max-width: 100%;
-  display: inline-flex;
-  margin-top: 16px;
-  padding: 13px 16px;
+.contact-form {
+  display: grid;
+  gap: 20px;
+  padding: clamp(24px, 4vw, 42px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(8, 22, 19, 0.9);
+  box-shadow: 0 28px 70px rgba(2, 12, 10, 0.34);
+}
+
+.contact-form-heading p:last-child {
+  margin-bottom: 0;
+  color: rgba(255, 250, 241, 0.72);
+}
+
+.contact-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.contact-form label {
+  display: grid;
+  gap: 8px;
+  color: #fffaf1;
+  font-weight: 760;
+}
+
+.contact-form input,
+.contact-form textarea {
+  width: 100%;
+  border: 1px solid rgba(111, 241, 220, 0.28);
   border-radius: 6px;
-  color: #241a08;
-  background: #f0c263;
-  font-weight: 820;
-  text-decoration: none;
-  overflow-wrap: anywhere;
+  padding: 13px 14px;
+  color: #fffaf1;
+  background: rgba(17, 35, 30, 0.94);
+  font: inherit;
+}
+
+.contact-form textarea {
+  resize: vertical;
+  min-height: 180px;
+  line-height: 1.55;
+}
+
+.contact-form input:focus-visible,
+.contact-form textarea:focus-visible {
+  outline: 3px solid #f0c263;
+  outline-offset: 2px;
+  border-color: transparent;
+}
+
+.contact-form .button {
+  width: fit-content;
+  border: 0;
+}
+
+.contact-form .button:disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+}
+
+.contact-captcha {
+  min-height: 78px;
+}
+
+.contact-status {
+  min-height: 1.5em;
+  margin: 0;
+  color: rgba(255, 250, 241, 0.78);
+}
+
+.contact-status.error {
+  color: #ffb6aa;
+}
+
+.contact-honeypot {
+  position: absolute !important;
+  left: -10000px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
 }
 
 @media (max-width: 900px) {
@@ -1290,6 +1364,10 @@ h3 {
   }
 
   .faq-list {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-field-grid {
     grid-template-columns: 1fr;
   }
 

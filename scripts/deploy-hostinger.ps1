@@ -145,6 +145,7 @@ $files = @(
   "favicon.svg",
   "styles.css",
   "scripts/site-motion.js",
+  "scripts/contact.js",
   "scripts/video-embeds.js",
   "scripts/voice-catalog.js",
   "scripts/voice-samples.js",

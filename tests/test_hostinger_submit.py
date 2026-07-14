@@ -79,6 +79,40 @@ def test_numbered_voice_catalog_is_anonymous_and_shared_with_submit():
         assert (ROOT / f"assets/voice-samples/catalog/voice-{number:02}.mp3").stat().st_size > 10_000
 
 
+def test_public_contact_form_hides_direct_address_and_requires_recaptcha():
+    public_pages = [
+        read("index.html"),
+        read("audiobooks.html"),
+        read("faq.html"),
+        read("contact.html"),
+        read("submit/index.html"),
+        read("frontend/index.html"),
+    ]
+    for page in public_pages:
+        assert "mailto:" not in page.lower()
+        assert "@accessibleaudio.co.za" not in page.lower()
+
+    contact = read("contact.html")
+    contact_js = read("scripts/contact.js")
+    endpoint = read("api/contact.php")
+    config = read("api/config.php")
+    deploy = read("scripts/deploy-hostinger.ps1")
+
+    assert 'id="contact-form"' in contact
+    assert 'id="contact-captcha"' in contact
+    assert "www.google.com/recaptcha/api.js" in contact
+    assert "scripts/contact.js?v=20260714-contact1" in contact
+    assert 'fetch("/api/contact.php"' in contact_js
+    assert "window.grecaptcha.getResponse" in contact_js
+    assert "captcha_token" in contact_js
+    assert "www.google.com/recaptcha/api/siteverify" in endpoint
+    assert "enforce_contact_rate_limit" in endpoint
+    assert "count($timestamps) >= 5" in endpoint
+    assert "mail($config['contact_recipient']" in endpoint
+    assert "recaptchaSiteKey" in config
+    assert '"scripts/contact.js"' in deploy
+
+
 def test_homepage_polish_is_deployed_and_respects_reduced_motion():
     html = read("index.html")
     styles = read("styles.css")

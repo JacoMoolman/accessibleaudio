@@ -26,7 +26,7 @@
     >
     <meta name="twitter:image" content="https://accessibleaudio.co.za/assets/aa-photo-hero.webp">
     <link rel="icon" href="favicon.svg?v=20260612-private" type="image/svg+xml">
-    <link rel="stylesheet" href="styles.css?v=20260705-dark1">
+    <link rel="stylesheet" href="styles.css?v=20260714-contact1">
   </head>
   <body>
     <header class="site-header" aria-label="Primary navigation">
@@ -54,12 +54,10 @@
           edition, local production process, or accessibility project for
           readers who need better access.
         </p>
-        <a class="button button-primary" href="mailto:audio@accessibleaudio.co.za">
-          audio@accessibleaudio.co.za
-        </a>
+        <a class="button button-primary" href="#contact-form">Send a message</a>
       </section>
 
-      <section class="section contact-grid" aria-label="Contact details">
+      <section class="section contact-grid" aria-label="Contact form">
         <div class="contact-note">
           <p class="section-kicker">Best fit</p>
           <h2>Publishers, schools, libraries, NGOs, and education teams.</h2>
@@ -68,25 +66,56 @@
             whether the project is a single pilot, a multi-title catalogue
             project, or a production-and-hosting request.
           </p>
-        </div>
-        <div class="contact-note">
-          <p class="section-kicker">Email</p>
-          <h2>Email us directly.</h2>
           <p>
             The first conversation covers project fit, sample quality, language
             needs, production approach, privacy requirements, and the audience
             the book should reach.
           </p>
-          <a class="contact-email" href="mailto:audio@accessibleaudio.co.za">
-            audio@accessibleaudio.co.za
-          </a>
         </div>
+        <form class="contact-form" id="contact-form">
+          <div class="contact-form-heading">
+            <p class="section-kicker">Project enquiry</p>
+            <h2>Tell us what you want to make accessible.</h2>
+            <p>Fields marked required must be completed before the message can be sent.</p>
+          </div>
+          <div class="contact-field-grid">
+            <label>
+              Name <span aria-hidden="true">*</span>
+              <input id="contact-name" name="name" type="text" autocomplete="name" minlength="2" maxlength="100" required>
+            </label>
+            <label>
+              Reply email <span aria-hidden="true">*</span>
+              <input id="contact-email" name="email" type="email" autocomplete="email" maxlength="254" required>
+            </label>
+          </div>
+          <label>
+            Organisation
+            <input id="contact-organisation" name="organisation" type="text" autocomplete="organization" maxlength="120">
+          </label>
+          <label>
+            Subject <span aria-hidden="true">*</span>
+            <input id="contact-subject" name="subject" type="text" minlength="3" maxlength="150" required>
+          </label>
+          <label>
+            Message <span aria-hidden="true">*</span>
+            <textarea id="contact-message" name="message" rows="8" minlength="20" maxlength="5000" required></textarea>
+          </label>
+          <label class="contact-honeypot" aria-hidden="true">
+            Leave this field empty
+            <input name="website" type="text" tabindex="-1" autocomplete="off">
+          </label>
+          <div class="contact-captcha" id="contact-captcha" aria-label="Human verification"></div>
+          <button class="button button-primary" id="contact-submit" type="submit" disabled>Send message</button>
+          <p class="contact-status" id="contact-status" role="status" aria-live="polite">Loading the human check…</p>
+        </form>
       </section>
     </main>
 
     <footer class="site-footer">
       <p>Accessible Audio</p>
-      <a href="mailto:audio@accessibleaudio.co.za">audio@accessibleaudio.co.za</a>
+      <a href="contact.html">Contact Accessible Audio</a>
     </footer>
+    <script src="scripts/contact.js?v=20260714-contact1"></script>
+    <script src="https://www.google.com/recaptcha/api.js?onload=contactRecaptchaReady&amp;render=explicit" async defer></script>
   </body>
 </html>

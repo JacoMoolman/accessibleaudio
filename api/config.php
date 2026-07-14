@@ -10,4 +10,5 @@ json_response([
     'supabaseUrl' => $config['supabase_url'],
     'supabaseAnonKey' => $config['supabase_anon_key'],
     'turnstileSiteKey' => $config['turnstile_site_key'],
+    'recaptchaSiteKey' => $config['recaptcha_site_key'],
 ]);
