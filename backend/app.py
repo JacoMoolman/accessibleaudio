@@ -562,7 +562,7 @@ def _decode_upload_text(content: bytes) -> str:
     except UnicodeDecodeError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Upload must be UTF-8 text",
+            detail="Upload must contain readable plain text",
         ) from exc
 
 

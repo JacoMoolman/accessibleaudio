@@ -194,7 +194,7 @@ function validate_upload(array $file, int $maxBytes): string
     }
     $content = file_get_contents($file['tmp_name']);
     if ($content === false || !mb_check_encoding($content, 'UTF-8')) {
-        json_error('Uploaded .txt file must be UTF-8 text', 400);
+        json_error('Uploaded .txt file must contain readable plain text', 400);
     }
     return $content;
 }

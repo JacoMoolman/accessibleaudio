@@ -25,7 +25,7 @@ def validate_txt_upload(filename: str, content: bytes, max_bytes: int = 10 * 102
     try:
         content.decode("utf-8")
     except UnicodeDecodeError as exc:
-        raise ValueError("Uploaded .txt file must be UTF-8 text") from exc
+        raise ValueError("Uploaded .txt file must contain readable plain text") from exc
 
 
 def validation_http_error(error: ValueError) -> HTTPException:

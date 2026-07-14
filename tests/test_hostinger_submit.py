@@ -23,6 +23,25 @@ def test_hostinger_submit_frontend_uses_php_api_and_client_side_analysis():
     assert 'fetchJson("/files"' not in app_js
 
 
+def test_user_facing_copy_does_not_require_utf8():
+    page_sources = [
+        read("faq.html"),
+        read("submit/index.html"),
+        read("frontend/index.html"),
+    ]
+
+    for content in page_sources:
+        assert "UTF-8" not in content
+
+    error_sources = [
+        read("api/lib.php"),
+        read("backend/app.py"),
+        read("backend/storage.py"),
+    ]
+    for content in error_sources:
+        assert "must be UTF-8 text" not in content
+
+
 def test_hostinger_php_backend_stores_uploads_locally_without_aws_or_s3_keys():
     api_files = list((ROOT / "api").glob("*.php"))
     assert api_files
