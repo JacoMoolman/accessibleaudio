@@ -42,6 +42,17 @@ def test_user_facing_copy_does_not_require_utf8():
         assert "must be UTF-8 text" not in content
 
 
+def test_voice_sample_controls_use_the_dark_site_palette():
+    html = read("voice-samples.html")
+    styles = read("styles.css")
+
+    assert "styles.css?v=20260714-voices2" in html
+    assert ".voice-card-actions button:focus-visible" in styles
+    assert "#fffdf7" not in styles
+    assert "background: rgba(7, 61, 53, 0.72);" in styles
+    assert "background: var(--soft);" in styles
+
+
 def test_hostinger_php_backend_stores_uploads_locally_without_aws_or_s3_keys():
     api_files = list((ROOT / "api").glob("*.php"))
     assert api_files
