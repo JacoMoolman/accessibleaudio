@@ -287,6 +287,10 @@ def test_faq_is_public_and_linked_from_the_site():
 
     assert "noindex" not in faq.lower()
     assert '<a href="faq.html" aria-current="page">FAQ</a>' in faq
+    assert "What can and cannot be uploaded?" in faq
+    assert "Do not upload material that is illegal." in faq
+    assert "excessively explicit" in faq
+    assert "not automatically eligible for a refund" in faq
     assert "<loc>https://accessibleaudio.co.za/faq.html</loc>" in sitemap
 
     public_pages = [
