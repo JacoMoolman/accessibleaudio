@@ -429,6 +429,16 @@ function list_records(string $uploadDir, string $userId): array
     return $records;
 }
 
+function find_upload_record(string $uploadDir, string $userId, string $uploadId): ?array
+{
+    foreach (list_records($uploadDir, $userId) as $record) {
+        if (($record['id'] ?? '') === $uploadId) {
+            return $record;
+        }
+    }
+    return null;
+}
+
 function delete_upload_record(string $uploadDir, string $userId, string $uploadId): ?array
 {
     $index = rtrim($uploadDir, '/\\') . '/uploads.jsonl';

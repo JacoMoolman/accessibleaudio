@@ -45,6 +45,7 @@ $options = [
     'chapter_titles' => parse_json_array($_POST['chapter_titles'] ?? ''),
     'make_video' => bool_value('make_video'),
 ];
+$wordCount = count_words($content);
 
 $record = [
     'id' => $uploadId,
@@ -57,12 +58,16 @@ $record = [
     'processed_at' => null,
     'result_text' => null,
     'result_path' => null,
+    'word_count' => $wordCount,
+    'narrator_voice' => $options['narrator_voice'],
+    'also_wav' => $options['also_wav'],
+    'translate' => $options['translate'],
+    'make_video' => $options['make_video'],
 ];
 
 file_put_contents($absoluteDir . '/options.txt', build_options_text($record, $options), LOCK_EX);
 append_record($uploadDir, $record);
 
-$wordCount = count_words($content);
 $payment = build_payfast_checkout($config, $user, $record, $wordCount, $options);
 $estimatedCostCents = total_cost_cents($wordCount, $options['narrator_voice'], $options['also_wav'], $options['translate'], $options['make_video']);
 

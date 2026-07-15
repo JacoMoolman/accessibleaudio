@@ -247,6 +247,32 @@ uploadForm.addEventListener("submit", async (event) => {
 refreshFilesButton.addEventListener("click", loadFiles);
 
 filesList.addEventListener("click", async (event) => {
+  const paymentButton = event.target.closest("[data-pay-upload]");
+  if (paymentButton && currentSession?.access_token) {
+    const uploadId = paymentButton.dataset.payUpload;
+    const filename = paymentButton.dataset.payFilename || "this book";
+    paymentButton.disabled = true;
+    setStatus(`Preparing payment for ${filename}...`);
+    try {
+      const data = await fetchJson("/api/payment.php", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${currentSession.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ upload_id: uploadId }),
+      });
+      renderPaymentCheckout(data.payment);
+      paymentPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+      setStatus(`PayFast checkout is ready for ${filename}.`);
+    } catch (error) {
+      setStatus(error.message, true);
+    } finally {
+      paymentButton.disabled = false;
+    }
+    return;
+  }
+
   const deleteButton = event.target.closest("[data-delete-upload]");
   if (!deleteButton || !currentSession?.access_token) {
     return;
@@ -721,6 +747,12 @@ function renderFile(file) {
       </div>
       <div class="file-row-actions">
         <span class="badge">${escapeHtml(file.status)}</span>
+        <button
+          type="button"
+          data-pay-upload="${escapeHtml(file.id)}"
+          data-pay-filename="${escapeHtml(file.filename)}"
+          aria-label="Pay for ${escapeHtml(file.filename)}"
+        >Pay now</button>
         <button
           type="button"
           class="danger"
