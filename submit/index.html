@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Submit Audiobook | Accessible Audio</title>
     <link rel="icon" href="https://accessibleaudio.co.za/favicon.svg?v=20260612-private" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles.css?v=20260715-motion2">
+    <link rel="stylesheet" href="./styles.css?v=20260715-voices4">
   </head>
   <body>
     <header class="site-header" aria-label="Primary navigation">
@@ -120,7 +120,10 @@
                     </select>
                     <button type="button" class="secondary" id="play-narrator-sample">Play sample</button>
                   </div>
-                  <span class="field-note">The numbers match the <a href="https://accessibleaudio.co.za/voice-samples.html" target="_blank" rel="noopener">voice sample page</a>.</span>
+                  <span class="field-note voice-pricing-note">
+                    The numbers match the <a href="https://accessibleaudio.co.za/voice-samples.html" target="_blank" rel="noopener">voice sample page</a>.
+                    <strong>Local: 0.5c/word.</strong> <strong>Cloud: 0.75c/word.</strong>
+                  </span>
                 </label>
 
                 <fieldset>
@@ -237,8 +240,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
-    <script src="../scripts/voice-catalog.js?v=20260714-voices3"></script>
-    <script src="./app.js?v=20260714-voices3"></script>
+    <script src="../scripts/voice-catalog.js?v=20260715-voices4"></script>
+    <script src="./app.js?v=20260715-voices4"></script>
     <script src="../scripts/site-motion.js?v=20260715-motion2"></script>
   </body>
 </html>

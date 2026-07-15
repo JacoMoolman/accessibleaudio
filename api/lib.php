@@ -1,6 +1,7 @@
 <?php
 
-const BOOK_COST_PER_WORD_CENTS = 0.5;
+const LOCAL_COST_PER_WORD_CENTS = 0.5;
+const CLOUD_COST_PER_WORD_CENTS = LOCAL_COST_PER_WORD_CENTS * 1.5;
 const OPTION_COSTS_CENTS = [
     'also_wav' => 2500,
     'translate' => 5000,
@@ -239,6 +240,7 @@ function parse_json_array(string $value): array
 
 function build_options_text(array $record, array $options): string
 {
+    $voicePricing = narrator_voice_pricing($options['narrator_voice']);
     $lines = [
         'Accessible Audio upload options',
         'upload_id: ' . $record['id'],
@@ -247,6 +249,8 @@ function build_options_text(array $record, array $options): string
         'book_storage: hostinger-local',
         'book_path: ' . $record['s3_key'],
         'narrator_voice: ' . ($options['narrator_voice'] ?: 'not selected'),
+        'voice_type: ' . ($voicePricing['type_label'] ?? 'not selected'),
+        'cost_per_word_cents: ' . ($voicePricing['cost_per_word_cents'] ?? 'not selected'),
         'output_format: mp3',
         'also_wav: ' . ($options['also_wav'] ? 'true' : 'false'),
         'source_language: ' . ($options['source_language'] ?: 'not detected'),
@@ -279,9 +283,27 @@ function format_zar_cents(float|int $cents): string
     return 'R ' . number_format(((float) $cents) / 100, 2, '.', '');
 }
 
-function total_cost_cents(int $wordCount, bool $alsoWav, bool $translate, bool $makeVideo): float
+function narrator_voice_pricing(string $voice): ?array
 {
-    $total = $wordCount * BOOK_COST_PER_WORD_CENTS;
+    if (!preg_match('/^Voice ([1-9]|[12][0-9]|3[0-5])$/', trim($voice), $matches)) {
+        return null;
+    }
+    $number = (int) $matches[1];
+    $isLocal = $number <= 5;
+    return [
+        'type' => $isLocal ? 'local' : 'cloud',
+        'type_label' => $isLocal ? 'Local' : 'Cloud',
+        'cost_per_word_cents' => $isLocal ? LOCAL_COST_PER_WORD_CENTS : CLOUD_COST_PER_WORD_CENTS,
+    ];
+}
+
+function total_cost_cents(int $wordCount, string $narratorVoice, bool $alsoWav, bool $translate, bool $makeVideo): float
+{
+    $voicePricing = narrator_voice_pricing($narratorVoice);
+    if ($voicePricing === null) {
+        throw new InvalidArgumentException('Choose a valid narrator voice');
+    }
+    $total = $wordCount * $voicePricing['cost_per_word_cents'];
     if ($alsoWav) {
         $total += OPTION_COSTS_CENTS['also_wav'];
     }
@@ -300,7 +322,7 @@ function build_payfast_checkout(array $config, array $user, array $record, int $
         return null;
     }
     $baseUrl = request_base_url();
-    $amountCents = total_cost_cents($wordCount, $options['also_wav'], $options['translate'], $options['make_video']);
+    $amountCents = total_cost_cents($wordCount, $options['narrator_voice'], $options['also_wav'], $options['translate'], $options['make_video']);
     $fields = [
         'merchant_id' => $config['payfast_merchant_id'],
         'merchant_key' => $config['payfast_merchant_key'],

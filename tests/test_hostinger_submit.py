@@ -12,8 +12,8 @@ def test_hostinger_submit_frontend_uses_php_api_and_client_side_analysis():
     html = read("submit/index.html")
     app_js = read("submit/app.js")
 
-    assert 'href="./styles.css?v=20260715-motion2"' in html
-    assert 'src="./app.js?v=20260714-voices3"' in html
+    assert 'href="./styles.css?v=20260715-voices4"' in html
+    assert 'src="./app.js?v=20260715-voices4"' in html
     assert 'fetchJson("/api/config.php")' in app_js
     assert 'fetchJson("/api/process-file.php"' in app_js
     assert 'fetchJson("/api/files.php"' in app_js
@@ -48,32 +48,54 @@ def test_voice_sample_controls_use_the_dark_site_palette():
     html = read("voice-samples.html")
     styles = read("styles.css")
 
-    assert "styles.css?v=20260715-motion2" in html
+    assert "styles.css?v=20260715-voices4" in html
     assert ".voice-card-actions button:focus-visible" in styles
     assert "#fffdf7" not in styles
     assert "background: rgba(7, 61, 53, 0.72);" in styles
     assert "background: var(--soft);" in styles
 
 
-def test_numbered_voice_catalog_is_anonymous_and_shared_with_submit():
+def test_numbered_voice_catalog_is_grouped_and_priced_without_naming_vendors():
     page = read("voice-samples.html")
     page_js = read("scripts/voice-samples.js")
     catalog_js = read("scripts/voice-catalog.js")
     submit_html = read("submit/index.html")
     submit_js = read("submit/app.js")
+    php_lib = read("api/lib.php")
+    process_file = read("api/process-file.php")
 
     public_voice_interface = "\n".join((page, page_js, catalog_js)).lower()
     for provider_name in ("gemini", "google text", "omnivoice", "voice provider", "local ai"):
         assert provider_name not in public_voice_interface
 
     assert "const voiceCount = 35" in catalog_js
+    assert "const localVoiceCount = 5" in catalog_js
+    assert "localCostPerWordCents = 0.5" in catalog_js
+    assert "cloudCostPerWordCents = localCostPerWordCents * 1.5" in catalog_js
+    assert 'type === "local" ? "Local voices" : "Cloud voices"' in catalog_js
     assert "/assets/voice-samples/catalog/voice-" in catalog_js
     assert "window.ACCESSIBLE_AUDIO_VOICES" in page_js
-    assert "../scripts/voice-catalog.js?v=20260714-voices3" in submit_html
+    assert 'id="local-voice-list"' in page
+    assert 'id="cloud-voice-list"' in page
+    assert "0.5c" in page
+    assert "0.75c" in page
+    assert "voice-provider-button" not in page
+    assert "../scripts/voice-catalog.js?v=20260715-voices4" in submit_html
     assert "The numbers match the" in submit_html
+    assert "Local: 0.5c/word." in submit_html
+    assert "Cloud: 0.75c/word." in submit_html
     assert 'href="https://accessibleaudio.co.za/voice-samples.html">Voice samples</a>' in submit_html
     assert "VOICE_CATALOG.map" in submit_js
     assert "populateNarratorVoices" in submit_js
+    assert 'document.createElement("optgroup")' in submit_js
+    assert '["local", "cloud"]' in submit_js
+    assert "selectedVoice.costPerWordCents" in submit_js
+    assert "LOCAL_COST_PER_WORD_CENTS = 0.5" in php_lib
+    assert "CLOUD_COST_PER_WORD_CENTS = LOCAL_COST_PER_WORD_CENTS * 1.5" in php_lib
+    assert "narrator_voice_pricing" in php_lib
+    assert "total_cost_cents(int $wordCount, string $narratorVoice" in php_lib
+    assert "'voice_type' => $voicePricing['type']" in process_file
+    assert "'cost_per_word_cents' => $voicePricing['cost_per_word_cents']" in process_file
 
     for number in range(1, 6):
         assert (ROOT / f"assets/voice-samples/catalog/voice-{number:02}.wav").stat().st_size > 10_000
@@ -132,9 +154,9 @@ def test_sitewide_polish_is_deployed_and_respects_reduced_motion():
     assert 'class="home-page"' in public_pages["homepage"]
     assert "hero-signal" in public_pages["homepage"]
     for page in public_pages.values():
-        assert "styles.css?v=20260715-motion2" in page
+        assert "styles.css?v=20260715-voices4" in page
         assert "scripts/site-motion.js?v=20260715-motion2" in page
-    assert "./styles.css?v=20260715-motion2" in submit
+    assert "./styles.css?v=20260715-voices4" in submit
     assert "../scripts/site-motion.js?v=20260715-motion2" in submit
     assert '"scripts/site-motion.js"' in deploy
     assert "document.body" in motion

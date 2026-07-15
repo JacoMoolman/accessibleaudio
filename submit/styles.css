@@ -371,6 +371,16 @@ h2 {
   margin-top: 8px;
 }
 
+.voice-pricing-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+}
+
+.voice-pricing-note strong {
+  color: #f0c263;
+}
+
 label,
 legend {
   color: var(--ink);

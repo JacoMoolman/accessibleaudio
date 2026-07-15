@@ -8,6 +8,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $config = hostinger_config();
 $user = current_user($config);
 $content = validate_upload($_FILES['file'] ?? [], $config['max_upload_bytes']);
+$narratorVoice = trim($_POST['narrator_voice'] ?? '');
+$voicePricing = narrator_voice_pricing($narratorVoice);
+if ($voicePricing === null) {
+    json_error('Choose a valid narrator voice', 400);
+}
 $uploadDir = ensure_upload_dir($config);
 
 $uploadId = uuid_v4();
@@ -28,7 +33,7 @@ if (!is_array($translationVoices)) {
     $translationVoices = [];
 }
 $options = [
-    'narrator_voice' => trim($_POST['narrator_voice'] ?? ''),
+    'narrator_voice' => $narratorVoice,
     'also_wav' => bool_value('also_wav'),
     'translate' => bool_value('translate'),
     'translation_languages' => parse_csv($_POST['translation_languages'] ?? ''),
@@ -56,12 +61,15 @@ append_record($uploadDir, $record);
 
 $wordCount = count_words($content);
 $payment = build_payfast_checkout($config, $user, $record, $wordCount, $options);
+$estimatedCostCents = total_cost_cents($wordCount, $options['narrator_voice'], $options['also_wav'], $options['translate'], $options['make_video']);
 
 json_response($record + [
     'payment' => $payment,
     'pricing' => [
         'word_count' => $wordCount,
-        'estimated_cost_cents' => total_cost_cents($wordCount, $options['also_wav'], $options['translate'], $options['make_video']),
-        'estimated_cost_zar' => format_zar_cents(total_cost_cents($wordCount, $options['also_wav'], $options['translate'], $options['make_video'])),
+        'voice_type' => $voicePricing['type'],
+        'cost_per_word_cents' => $voicePricing['cost_per_word_cents'],
+        'estimated_cost_cents' => $estimatedCostCents,
+        'estimated_cost_zar' => format_zar_cents($estimatedCostCents),
     ],
 ], 201);

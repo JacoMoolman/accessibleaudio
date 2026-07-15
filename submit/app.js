@@ -33,6 +33,9 @@ const payfastForm = document.getElementById("payfast-form");
 const playNarratorSampleButton = document.getElementById("play-narrator-sample");
 const captchaSlot = document.getElementById("captcha-slot");
 const VOICE_CATALOG = window.ACCESSIBLE_AUDIO_VOICES || [];
+const VOICES_BY_LABEL = Object.fromEntries(
+  VOICE_CATALOG.map((voice) => [voice.label, voice])
+);
 const VOICE_SAMPLE_URLS = Object.fromEntries(
   VOICE_CATALOG.map((voice) => [voice.label, voice.sampleUrl])
 );
@@ -49,11 +52,19 @@ init();
 
 function populateNarratorVoices() {
   const select = document.getElementById("narrator-voice");
-  VOICE_CATALOG.forEach((voice) => {
-    const option = document.createElement("option");
-    option.value = voice.label;
-    option.textContent = voice.label;
-    select.append(option);
+  ["local", "cloud"].forEach((type) => {
+    const voices = VOICE_CATALOG.filter((voice) => voice.type === type);
+    if (!voices.length) return;
+    const group = document.createElement("optgroup");
+    const rate = voices[0].costPerWordCents;
+    group.label = `${voices[0].typeLabel} — ${formatCentsPerWord(rate)}`;
+    voices.forEach((voice) => {
+      const option = document.createElement("option");
+      option.value = voice.label;
+      option.textContent = voice.label;
+      group.append(option);
+    });
+    select.append(group);
   });
 }
 
@@ -151,6 +162,10 @@ document.getElementById("also-wav").addEventListener("change", () => {
   renderPaymentCheckout(null);
 });
 document.getElementById("make-video").addEventListener("change", () => {
+  updateCostEstimate();
+  renderPaymentCheckout(null);
+});
+document.getElementById("narrator-voice").addEventListener("change", () => {
   updateCostEstimate();
   renderPaymentCheckout(null);
 });
@@ -392,7 +407,7 @@ function renderAnalysisResult(message = "", isError = false) {
   }
 
   const wordCount = Number(fileAnalysis.word_count || 0).toLocaleString();
-  analysisResult.textContent = `${fileAnalysis.source_language || "Unknown"} detected, ${fileAnalysis.chapter_count} chapter${fileAnalysis.chapter_count === 1 ? "" : "s"} found (${wordCount} words at 0.5c/word).`;
+  analysisResult.textContent = `${fileAnalysis.source_language || "Unknown"} detected, ${fileAnalysis.chapter_count} chapter${fileAnalysis.chapter_count === 1 ? "" : "s"} found (${wordCount} words). Choose a Local or Cloud voice to calculate the production price.`;
   analysisResult.classList.remove("error");
   chapterList.innerHTML = fileAnalysis.chapters
     .map((chapter) => `<li>${escapeHtml(chapter.title)}</li>`)
@@ -438,10 +453,25 @@ function updateCostEstimate() {
   if (!fileAnalysis) {
     return;
   }
-  const baseCents = Number(fileAnalysis.estimated_cost_cents || 0);
+  const wordCount = Number(fileAnalysis.word_count || 0);
+  const selectedVoice = VOICES_BY_LABEL[document.getElementById("narrator-voice").value];
+  if (!selectedVoice) {
+    const localVoice = VOICE_CATALOG.find((voice) => voice.type === "local");
+    const cloudVoice = VOICE_CATALOG.find((voice) => voice.type === "cloud");
+    costEstimateTotal.textContent = "Select a voice";
+    costEstimateBreakdown.innerHTML = [localVoice, cloudVoice]
+      .filter(Boolean)
+      .map((voice) => {
+        const cents = wordCount * voice.costPerWordCents;
+        return `<li><span>${escapeHtml(voice.typeLabel)} (${formatCentsPerWord(voice.costPerWordCents)})</span><strong>${formatZarFromCents(cents)}</strong></li>`;
+      })
+      .join("");
+    return;
+  }
+  const baseCents = wordCount * selectedVoice.costPerWordCents;
   const rows = [
     {
-      label: `Book conversion (${Number(fileAnalysis.word_count || 0).toLocaleString()} words at 0.5c/word)`,
+      label: `${selectedVoice.typeLabel} book conversion (${wordCount.toLocaleString()} words at ${formatCentsPerWord(selectedVoice.costPerWordCents)})`,
       cents: baseCents,
     },
   ];
@@ -463,6 +493,10 @@ function updateCostEstimate() {
 
 function formatZarFromCents(cents) {
   return `R ${(Number(cents || 0) / 100).toFixed(2)}`;
+}
+
+function formatCentsPerWord(cents) {
+  return `${Number(cents).toFixed(2).replace(/0+$/, "").replace(/\.$/, "")}c/word`;
 }
 
 function setProductionOptionsEnabled(enabled) {
