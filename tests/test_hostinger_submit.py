@@ -12,7 +12,7 @@ def test_hostinger_submit_frontend_uses_php_api_and_client_side_analysis():
     html = read("submit/index.html")
     app_js = read("submit/app.js")
 
-    assert 'href="./styles.css"' in html
+    assert 'href="./styles.css?v=20260715-motion2"' in html
     assert 'src="./app.js?v=20260714-voices3"' in html
     assert 'fetchJson("/api/config.php")' in app_js
     assert 'fetchJson("/api/process-file.php"' in app_js
@@ -48,7 +48,7 @@ def test_voice_sample_controls_use_the_dark_site_palette():
     html = read("voice-samples.html")
     styles = read("styles.css")
 
-    assert "styles.css?v=20260714-voices3" in html
+    assert "styles.css?v=20260715-motion2" in html
     assert ".voice-card-actions button:focus-visible" in styles
     assert "#fffdf7" not in styles
     assert "background: rgba(7, 61, 53, 0.72);" in styles
@@ -115,21 +115,37 @@ def test_public_contact_form_hides_direct_address_and_requires_recaptcha():
     assert '"scripts/contact.js"' in deploy
 
 
-def test_homepage_polish_is_deployed_and_respects_reduced_motion():
-    html = read("index.html")
+def test_sitewide_polish_is_deployed_and_respects_reduced_motion():
+    public_pages = {
+        "homepage": read("index.html"),
+        "audiobook library": read("audiobooks.html"),
+        "contact page": read("contact.html"),
+        "voice samples page": read("voice-samples.html"),
+        "FAQ page": read("faq.html"),
+    }
+    submit = read("submit/index.html")
     styles = read("styles.css")
+    submit_styles = read("submit/styles.css")
     motion = read("scripts/site-motion.js")
     deploy = read("scripts/deploy-hostinger.ps1")
 
-    assert 'class="home-page"' in html
-    assert "hero-signal" in html
-    assert "styles.css?v=20260714-motion1" in html
-    assert "scripts/site-motion.js?v=20260714-motion1" in html
+    assert 'class="home-page"' in public_pages["homepage"]
+    assert "hero-signal" in public_pages["homepage"]
+    for page in public_pages.values():
+        assert "styles.css?v=20260715-motion2" in page
+        assert "scripts/site-motion.js?v=20260715-motion2" in page
+    assert "./styles.css?v=20260715-motion2" in submit
+    assert "../scripts/site-motion.js?v=20260715-motion2" in submit
     assert '"scripts/site-motion.js"' in deploy
+    assert "document.body" in motion
+    assert 'hero.classList.add("motion-hero")' in motion
+    assert '"animationend"' in motion
+    assert 'classList.remove("motion-hero-item")' in motion
     assert "IntersectionObserver" in motion
     assert "requestAnimationFrame" in motion
     assert "prefers-reduced-motion: reduce" in motion
     assert "@media (prefers-reduced-motion: reduce)" in styles
+    assert "@media (prefers-reduced-motion: reduce)" in submit_styles
 
 
 def test_faq_is_public_and_linked_from_the_site():
