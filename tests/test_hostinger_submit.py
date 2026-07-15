@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 
@@ -132,8 +133,16 @@ def test_public_contact_form_hides_direct_address_and_requires_recaptcha():
     assert "www.google.com/recaptcha/api/siteverify" in endpoint
     assert "enforce_contact_rate_limit" in endpoint
     assert "count($timestamps) >= 5" in endpoint
-    assert "mail($config['contact_recipient']" in endpoint
+    assert "send_contact_email" in endpoint
+    assert "AUTH LOGIN" in endpoint
+    assert "stream_socket_client" in endpoint
+    assert "smtp_expect($socket, [250])" in endpoint
+    assert not re.search(r"(?<![A-Za-z0-9_])mail\(", endpoint)
+    assert "'contact_smtp_password'" in read("api/lib.php")
+    assert "EMAIL_PASSWORD" in read("api/lib.php")
     assert "recaptchaSiteKey" in config
+    assert "smtp" not in config.lower()
+    assert "email_password" not in config.lower()
     assert '"scripts/contact.js"' in deploy
 
 

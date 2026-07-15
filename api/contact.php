@@ -50,7 +50,13 @@ if ($startedAt <= 0 || (int) floor(microtime(true) * 1000) - $startedAt < 3000) 
 if ($captchaToken === '') {
     json_error('Complete the human check.', 422);
 }
-if (!$config['recaptcha_secret_key'] || !$config['contact_recipient']) {
+if (
+    !$config['recaptcha_secret_key']
+    || !$config['contact_recipient']
+    || !$config['contact_smtp_host']
+    || !$config['contact_smtp_username']
+    || !$config['contact_smtp_password']
+) {
     json_error('The protected contact form is not configured.', 503);
 }
 
@@ -79,18 +85,125 @@ $body = implode("\n", [
     'Submitted: ' . gmdate('c'),
     'IP: ' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'),
 ]);
-$headers = implode("\r\n", [
-    'From: Accessible Audio website <no-reply@accessibleaudio.co.za>',
-    'Reply-To: ' . $email,
-    'Content-Type: text/plain; charset=UTF-8',
-    'X-Mailer: Accessible Audio contact form',
-]);
-
-if (!mail($config['contact_recipient'], 'Accessible Audio contact: ' . $safeSubject, $body, $headers)) {
+try {
+    send_contact_email(
+        $config,
+        'Accessible Audio contact: ' . $safeSubject,
+        $body,
+        $email,
+    );
+} catch (RuntimeException $error) {
+    error_log('Accessible Audio contact SMTP failure: ' . $error->getMessage());
     json_error('Your message could not be delivered. Please try again later.', 502);
 }
 
 json_response(['ok' => true]);
+
+function send_contact_email(array $config, string $subject, string $body, string $replyEmail): void
+{
+    $host = (string) $config['contact_smtp_host'];
+    $port = (int) $config['contact_smtp_port'];
+    $username = (string) $config['contact_smtp_username'];
+    $password = (string) $config['contact_smtp_password'];
+    $recipient = (string) $config['contact_recipient'];
+    $transport = $port === 465 ? 'ssl' : 'tcp';
+    $socket = @stream_socket_client(
+        $transport . '://' . $host . ':' . $port,
+        $errorNumber,
+        $errorMessage,
+        15,
+        STREAM_CLIENT_CONNECT,
+    );
+    if (!is_resource($socket)) {
+        throw new RuntimeException('Could not connect to the configured SMTP server.');
+    }
+
+    try {
+        stream_set_timeout($socket, 15);
+        smtp_expect($socket, [220]);
+        smtp_command($socket, 'EHLO accessibleaudio.co.za', [250]);
+        if ($port === 587) {
+            smtp_command($socket, 'STARTTLS', [220]);
+            if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                throw new RuntimeException('Could not enable SMTP encryption.');
+            }
+            smtp_command($socket, 'EHLO accessibleaudio.co.za', [250]);
+        }
+        smtp_command($socket, 'AUTH LOGIN', [334]);
+        smtp_command($socket, base64_encode($username), [334]);
+        smtp_command($socket, base64_encode($password), [235]);
+        smtp_command($socket, 'MAIL FROM:<' . $username . '>', [250]);
+        smtp_command($socket, 'RCPT TO:<' . $recipient . '>', [250, 251]);
+        smtp_command($socket, 'DATA', [354]);
+
+        $safeReplyEmail = preg_replace('/[\r\n]+/', '', $replyEmail);
+        $safeSubject = preg_replace('/[\r\n]+/', ' ', $subject);
+        if (function_exists('mb_encode_mimeheader')) {
+            $safeSubject = mb_encode_mimeheader($safeSubject, 'UTF-8', 'B', "\r\n");
+        }
+        $messageId = bin2hex(random_bytes(16)) . '@accessibleaudio.co.za';
+        $headers = [
+            'Date: ' . date(DATE_RFC2822),
+            'From: Accessible Audio website <' . $username . '>',
+            'To: Accessible Audio <' . $recipient . '>',
+            'Reply-To: <' . $safeReplyEmail . '>',
+            'Subject: ' . $safeSubject,
+            'Message-ID: <' . $messageId . '>',
+            'MIME-Version: 1.0',
+            'Content-Type: text/plain; charset=UTF-8',
+            'Content-Transfer-Encoding: 8bit',
+            'X-Mailer: Accessible Audio contact form',
+        ];
+        $normalizedBody = str_replace(["\r\n", "\r"], "\n", $body);
+        $normalizedBody = str_replace("\n", "\r\n", $normalizedBody);
+        $data = implode("\r\n", $headers) . "\r\n\r\n" . $normalizedBody;
+        $data = preg_replace('/^\./m', '..', $data);
+        smtp_write_all($socket, $data . "\r\n.\r\n");
+        smtp_expect($socket, [250]);
+        smtp_command($socket, 'QUIT', [221]);
+    } finally {
+        fclose($socket);
+    }
+}
+
+function smtp_command($socket, string $command, array $expectedCodes): string
+{
+    smtp_write_all($socket, $command . "\r\n");
+    return smtp_expect($socket, $expectedCodes);
+}
+
+function smtp_write_all($socket, string $data): void
+{
+    $offset = 0;
+    $length = strlen($data);
+    while ($offset < $length) {
+        $written = fwrite($socket, substr($data, $offset));
+        if ($written === false || $written === 0) {
+            throw new RuntimeException('Could not write to the SMTP server.');
+        }
+        $offset += $written;
+    }
+}
+
+function smtp_expect($socket, array $expectedCodes): string
+{
+    $response = '';
+    $code = 0;
+    while (($line = fgets($socket, 4096)) !== false) {
+        $response .= $line;
+        if (preg_match('/^(\d{3})([ -])/', $line, $matches)) {
+            $code = (int) $matches[1];
+            if ($matches[2] === ' ') {
+                break;
+            }
+        }
+    }
+    $meta = stream_get_meta_data($socket);
+    if (!in_array($code, $expectedCodes, true) || !empty($meta['timed_out'])) {
+        throw new RuntimeException('The SMTP server rejected a delivery step (code ' . $code . ').');
+    }
+    return $response;
+}
 
 function verify_recaptcha(string $secret, string $token, string $remoteIp): array
 {

@@ -20,6 +20,9 @@ $voiceCatalogScriptPath = Join-Path $root "scripts\voice-catalog.js"
 $voiceSamplesScriptPath = Join-Path $root "scripts\voice-samples.js"
 $submitIndexPath = Join-Path $root "submit\index.html"
 $submitAppPath = Join-Path $root "submit\app.js"
+$contactEndpointPath = Join-Path $root "api\contact.php"
+$apiLibPath = Join-Path $root "api\lib.php"
+$apiConfigPath = Join-Path $root "api\config.php"
 
 function Assert-FileExists {
   param([string] $Path)
@@ -80,6 +83,9 @@ Assert-FileExists $voiceCatalogScriptPath
 Assert-FileExists $voiceSamplesScriptPath
 Assert-FileExists $submitIndexPath
 Assert-FileExists $submitAppPath
+Assert-FileExists $contactEndpointPath
+Assert-FileExists $apiLibPath
+Assert-FileExists $apiConfigPath
 
 $index = Get-Content -LiteralPath $indexPath -Raw
 $audiobooks = Get-Content -LiteralPath $audiobooksPath -Raw
@@ -97,6 +103,9 @@ $voiceCatalogScript = Get-Content -LiteralPath $voiceCatalogScriptPath -Raw
 $voiceSamplesScript = Get-Content -LiteralPath $voiceSamplesScriptPath -Raw
 $submitIndex = Get-Content -LiteralPath $submitIndexPath -Raw
 $submitApp = Get-Content -LiteralPath $submitAppPath -Raw
+$contactEndpoint = Get-Content -LiteralPath $contactEndpointPath -Raw
+$apiLib = Get-Content -LiteralPath $apiLibPath -Raw
+$apiConfig = Get-Content -LiteralPath $apiConfigPath -Raw
 $combined = "$index`n$audiobooks`n$contact"
 
 Assert-Contains $index "Accessible Audio" "homepage"
@@ -273,6 +282,12 @@ Assert-Contains $contact "www.google.com/recaptcha/api.js" "contact page"
 Assert-Contains $contact "scripts/contact.js?v=20260714-contact1" "contact page"
 Assert-Contains $contactScript 'fetch("/api/contact.php"' "contact script"
 Assert-Contains $contactScript "window.grecaptcha.getResponse" "contact script"
+Assert-Contains $contactEndpoint "send_contact_email" "contact endpoint"
+Assert-Contains $contactEndpoint "AUTH LOGIN" "contact endpoint"
+Assert-Contains $contactEndpoint "stream_socket_client" "contact endpoint"
+Assert-NotMatch $contactEndpoint "(?<![A-Za-z0-9_])mail\(" "contact endpoint"
+Assert-Contains $apiLib "contact_smtp_password" "API library"
+Assert-NotMatch $apiConfig "(?i)smtp|email_password" "public API config"
 Assert-Contains $deploy "Get-ChildItem" "deployment script"
 Assert-Contains $deploy "audiobooks.html" "deployment script"
 Assert-Contains $deploy '"faq.html"' "deployment script"
