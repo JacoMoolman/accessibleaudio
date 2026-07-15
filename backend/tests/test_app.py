@@ -224,7 +224,7 @@ def test_submit_page_does_not_render_language_placeholder():
     assert "Detected language" not in response.text
 
 
-def test_frontend_hides_all_login_controls_when_logged_in():
+def test_frontend_uses_google_only_and_hides_the_google_control_when_logged_in():
     client, _, _ = make_client()
 
     response = client.get("/app.js")
@@ -232,8 +232,9 @@ def test_frontend_hides_all_login_controls_when_logged_in():
     assert response.status_code == 200
     assert "authControls.hidden = loggedIn" in response.text
     assert "googleButton.hidden = loggedIn" in response.text
-    assert 'hideWhenLoggedIn(emailInput?.closest("label"), loggedIn)' in response.text
-    assert 'hideWhenLoggedIn(passwordInput?.closest("label"), loggedIn)' in response.text
+    assert 'provider: "google"' in response.text
+    assert "signInWithPassword" not in response.text
+    assert "auth.signUp" not in response.text
 
 
 def test_frontend_responses_disable_browser_cache():
@@ -464,15 +465,15 @@ def test_frontend_renders_server_generated_payfast_checkout():
     assert 'payfastForm.submit()' in response.text
 
 
-def test_frontend_attempts_direct_test_login_before_supabase_auth():
+def test_frontend_does_not_expose_the_direct_test_login():
     client, _, _ = make_client()
 
     response = client.get("/app.js")
 
     assert response.status_code == 200
-    assert 'fetchJson("/test-login"' in response.text
-    assert "const testSession = await tryTestLogin(email, password)" in response.text
-    assert "setSession(testSession)" in response.text
+    assert 'fetchJson("/test-login"' not in response.text
+    assert "tryTestLogin" not in response.text
+    assert "credentials()" not in response.text
 
 
 def test_test_login_rejects_wrong_password():

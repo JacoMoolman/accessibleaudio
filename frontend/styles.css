@@ -237,6 +237,189 @@ h2 {
 
 .auth-panel {
   grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(190px, 0.72fr) minmax(0, 1.55fr);
+  gap: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.auth-identity {
+  position: relative;
+  min-height: 300px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 24px;
+  overflow: hidden;
+  background:
+    linear-gradient(155deg, rgba(5, 44, 39, 0.5), rgba(36, 26, 8, 0.88)),
+    var(--hero-image) 60% center / cover no-repeat;
+}
+
+.auth-identity::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 38%, rgba(111, 241, 220, 0.2), transparent 42%);
+}
+
+.auth-brand-mark {
+  position: relative;
+  z-index: 1;
+  width: 82px;
+  height: 82px;
+  border: 1px solid rgba(255, 250, 241, 0.34);
+  border-radius: 50%;
+  background: var(--paper) var(--logo) center / cover no-repeat;
+  box-shadow: 0 0 0 10px rgba(111, 241, 220, 0.08), 0 22px 44px rgba(0, 0, 0, 0.34);
+}
+
+.auth-signal {
+  position: relative;
+  z-index: 1;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.auth-signal i {
+  width: 3px;
+  height: 100%;
+  display: block;
+  border-radius: 999px;
+  background: #8ff9e8;
+  box-shadow: 0 0 14px rgba(111, 241, 220, 0.6);
+  animation: auth-signal 1.35s ease-in-out infinite alternate;
+}
+
+.auth-signal i:nth-child(2),
+.auth-signal i:nth-child(4) {
+  animation-delay: -0.7s;
+}
+
+.auth-signal i:nth-child(3) {
+  animation-delay: -1.1s;
+}
+
+.auth-copy {
+  display: grid;
+  align-content: center;
+  padding: clamp(28px, 5vw, 54px);
+}
+
+.auth-copy .section-kicker {
+  margin-bottom: 10px;
+}
+
+.auth-copy h2 {
+  margin-bottom: 16px;
+  font-size: clamp(2rem, 4vw, 3.15rem);
+}
+
+.auth-copy > p:not(.section-kicker) {
+  max-width: 34rem;
+  margin-bottom: 24px;
+  color: var(--submit-muted);
+  font-size: 1.02rem;
+  line-height: 1.65;
+}
+
+.auth-controls {
+  display: grid;
+  gap: 16px;
+}
+
+.google-auth-button {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 24px 1fr 24px;
+  gap: 14px;
+  padding: 14px 18px;
+  border-color: rgba(255, 255, 255, 0.84);
+  background: #ffffff;
+  color: #1f1f1f;
+  font-weight: 820;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24);
+}
+
+.google-auth-button:hover {
+  border-color: #ffffff;
+  background: #f7fffd;
+}
+
+.google-auth-button.is-loading .auth-arrow {
+  animation: auth-arrow 720ms ease-in-out infinite alternate;
+}
+
+.google-mark {
+  width: 22px;
+  height: 22px;
+}
+
+.auth-arrow {
+  color: var(--green-dark);
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.auth-assurance {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  color: var(--submit-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.auth-assurance-dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  margin-top: 0.25rem;
+  border: 2px solid #b8fff4;
+  border-radius: 50%;
+  box-shadow: 0 0 0 5px rgba(111, 241, 220, 0.08);
+  animation: auth-assurance 2.2s ease-in-out infinite;
+}
+
+.auth-logout {
+  width: auto;
+  justify-self: start;
+}
+
+.auth-panel.is-authenticated {
+  grid-template-columns: 150px minmax(0, 1fr);
+}
+
+.auth-panel.is-authenticated .auth-identity {
+  min-height: 210px;
+}
+
+@keyframes auth-signal {
+  from { transform: scaleY(0.28); opacity: 0.46; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes auth-arrow {
+  from { transform: translateX(0); }
+  to { transform: translateX(5px); }
+}
+
+@keyframes auth-assurance {
+  0%, 100% { box-shadow: 0 0 0 5px rgba(111, 241, 220, 0.08); }
+  50% { box-shadow: 0 0 0 9px rgba(111, 241, 220, 0.02); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-signal i,
+  .auth-assurance-dot,
+  .google-auth-button.is-loading .auth-arrow {
+    animation: none;
+  }
 }
 
 .panel {
@@ -733,6 +916,26 @@ button.ghost {
 
   .panel {
     padding: 18px;
+  }
+
+  .auth-panel,
+  .auth-panel.is-authenticated {
+    grid-template-columns: 1fr;
+    padding: 0;
+  }
+
+  .auth-identity,
+  .auth-panel.is-authenticated .auth-identity {
+    min-height: 150px;
+  }
+
+  .auth-brand-mark {
+    width: 64px;
+    height: 64px;
+  }
+
+  .auth-signal {
+    height: 20px;
   }
 }
 

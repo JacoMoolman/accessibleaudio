@@ -1,18 +1,12 @@
 let supabaseClient = null;
 let currentSession = null;
-let turnstileSiteKey = null;
-let turnstileWidgetId = null;
-let captchaToken = null;
 
 const authState = document.getElementById("auth-state");
 const authControls = document.getElementById("auth-controls");
-const emailInput = document.getElementById("email");
-const passwordInput = document.getElementById("password");
+const authPanel = document.getElementById("auth-panel");
 const uploadPanel = document.getElementById("upload-panel");
 const filesPanel = document.getElementById("files-panel");
 const statusEl = document.getElementById("status");
-const loginButton = document.getElementById("login-button");
-const signupButton = document.getElementById("signup-button");
 const googleButton = document.getElementById("google-button");
 const logoutButton = document.getElementById("logout-button");
 const uploadForm = document.getElementById("upload-form");
@@ -33,7 +27,6 @@ const payfastForm = document.getElementById("payfast-form");
 const filesList = document.getElementById("files-list");
 const playNarratorSampleButton = document.getElementById("play-narrator-sample");
 const stopNarratorSampleButton = document.getElementById("stop-narrator-sample");
-const captchaSlot = document.getElementById("captcha-slot");
 const VOICE_CATALOG = window.ACCESSIBLE_AUDIO_VOICES || [];
 const VOICES_BY_LABEL = Object.fromEntries(
   VOICE_CATALOG.map((voice) => [voice.label, voice])
@@ -77,9 +70,6 @@ async function init() {
       config.supabaseUrl,
       config.supabaseAnonKey
     );
-    turnstileSiteKey = config.turnstileSiteKey || null;
-    renderCaptchaIfConfigured();
-
     const { data } = await supabaseClient.auth.getSession();
     setSession(data.session);
 
@@ -91,55 +81,24 @@ async function init() {
   }
 }
 
-loginButton.addEventListener("click", async () => {
-  const { email, password } = credentials();
-  const testSession = await tryTestLogin(email, password);
-  if (testSession) {
-    setSession(testSession);
-    setStatus("Logged in.");
-    return;
-  }
-
-  const options = authOptionsWithCaptcha();
-  if (options === null) return;
-  const { error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password,
-    ...(options ? { options } : {}),
-  });
-  resetCaptcha();
-  if (error) {
-    setStatus(error.message, true);
-    return;
-  }
-  setStatus("Logged in.");
-});
-
-signupButton.addEventListener("click", async () => {
-  const { email, password } = credentials();
-  const options = authOptionsWithCaptcha();
-  if (options === null) return;
-  const { error } = await supabaseClient.auth.signUp({
-    email,
-    password,
-    ...(options ? { options } : {}),
-  });
-  resetCaptcha();
-  if (error) {
-    setStatus(error.message, true);
-    return;
-  }
-  setStatus("Signup started. Check email if confirmation is enabled.");
-});
-
 googleButton.addEventListener("click", async () => {
+  if (!supabaseClient) {
+    setStatus("Google sign-in is still loading. Try again in a moment.", true);
+    return;
+  }
+  googleButton.disabled = true;
+  googleButton.classList.add("is-loading");
+  setStatus("Opening secure Google sign-in...");
   const { error } = await supabaseClient.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/submit/`,
-      },
+    provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}/submit/`,
+      queryParams: { prompt: "select_account" },
+    },
   });
   if (error) {
+    googleButton.disabled = false;
+    googleButton.classList.remove("is-loading");
     setStatus(error.message, true);
   }
 });
@@ -315,31 +274,6 @@ payfastForm.addEventListener("submit", (event) => {
   event.preventDefault();
   payfastForm.submit();
 });
-
-function credentials() {
-  return {
-    email: document.getElementById("email").value.trim(),
-    password: document.getElementById("password").value,
-  };
-}
-
-async function tryTestLogin(email, password) {
-  try {
-    const data = await fetchJson("/api/test-login.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, password }),
-    });
-    return {
-      access_token: data.access_token,
-      user: data.user,
-    };
-  } catch (_error) {
-    return null;
-  }
-}
 
 function selectedTranslationLanguages() {
   return Array.from(
@@ -647,53 +581,6 @@ function cssEscape(value) {
   return String(value).replaceAll('"', '\\"');
 }
 
-function authOptionsWithCaptcha() {
-  if (!turnstileSiteKey) {
-    return undefined;
-  }
-  if (!captchaToken) {
-    setStatus("Complete the human check first.", true);
-    return null;
-  }
-  return { captchaToken };
-}
-
-function renderCaptchaIfConfigured() {
-  if (!turnstileSiteKey) {
-    captchaSlot.hidden = true;
-    return;
-  }
-  captchaSlot.hidden = false;
-  const renderWhenReady = () => {
-    if (!window.turnstile) {
-      window.setTimeout(renderWhenReady, 100);
-      return;
-    }
-    turnstileWidgetId = window.turnstile.render(captchaSlot, {
-      sitekey: turnstileSiteKey,
-      callback: (token) => {
-        captchaToken = token;
-        setStatus("");
-      },
-      "expired-callback": () => {
-        captchaToken = null;
-      },
-      "error-callback": () => {
-        captchaToken = null;
-        setStatus("Human check failed. Try again.", true);
-      },
-    });
-  };
-  renderWhenReady();
-}
-
-function resetCaptcha() {
-  captchaToken = null;
-  if (window.turnstile && turnstileWidgetId !== null) {
-    window.turnstile.reset(turnstileWidgetId);
-  }
-}
-
 async function setSession(session) {
   currentSession = session;
   const loggedIn = Boolean(session?.user);
@@ -702,24 +589,14 @@ async function setSession(session) {
   if (authControls) {
     authControls.hidden = loggedIn;
   }
-  hideWhenLoggedIn(emailInput?.closest("label"), loggedIn);
-  hideWhenLoggedIn(passwordInput?.closest("label"), loggedIn);
-  hideWhenLoggedIn(captchaSlot, loggedIn);
+  authPanel.classList.toggle("is-authenticated", loggedIn);
   logoutButton.hidden = !loggedIn;
-  loginButton.hidden = loggedIn;
-  signupButton.hidden = loggedIn;
   googleButton.hidden = loggedIn;
   authState.textContent = loggedIn
     ? `Logged in as ${session.user.email || session.user.id}`
-    : "Sign up or log in to upload a book.";
+    : "Use your Google account to keep your manuscripts and production choices together.";
   if (loggedIn) {
     await loadFiles();
-  }
-}
-
-function hideWhenLoggedIn(element, loggedIn) {
-  if (element) {
-    element.hidden = loggedIn;
   }
 }
 

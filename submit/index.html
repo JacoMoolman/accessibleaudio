@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Submit Audiobook | Accessible Audio</title>
     <link rel="icon" href="https://accessibleaudio.co.za/favicon.svg?v=20260612-private" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles.css?v=20260715-payment2">
+    <link rel="stylesheet" href="./styles.css?v=20260715-google1">
   </head>
   <body>
     <header class="site-header" aria-label="Primary navigation">
@@ -50,32 +50,35 @@
         </div>
 
         <div class="submit-grid">
-          <section class="panel auth-panel" id="auth-panel">
-            <div class="panel-header">
-              <h2>Account</h2>
-              <p id="auth-state">Sign up or log in to upload a book.</p>
+          <section class="panel auth-panel" id="auth-panel" aria-labelledby="auth-title">
+            <div class="auth-identity" aria-hidden="true">
+              <span class="auth-brand-mark"></span>
+              <span class="auth-signal"><i></i><i></i><i></i><i></i><i></i></span>
             </div>
-            <form id="auth-form">
-              <div class="auth-controls grid-form" id="auth-controls">
-                <label>
-                  Email
-                  <input id="email" type="email" autocomplete="email" required>
-                </label>
-                <label>
-                  Password
-                  <input id="password" type="password" autocomplete="current-password" required minlength="6">
-                </label>
-                <div class="captcha-slot" id="captcha-slot" hidden></div>
-                <div class="actions">
-                  <button type="button" id="login-button">Log in</button>
-                  <button type="button" id="signup-button" class="secondary">Sign up</button>
-                  <button type="button" id="google-button" class="secondary">Continue with Google</button>
-                </div>
+            <div class="auth-copy">
+              <p class="section-kicker">Google sign-in</p>
+              <h2 id="auth-title">One secure way in.</h2>
+              <p id="auth-state">
+                Use your Google account to keep your manuscripts and production choices together.
+              </p>
+              <div class="auth-controls" id="auth-controls">
+                <button type="button" id="google-button" class="google-auth-button">
+                  <svg class="google-mark" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
+                    <path fill="#4285f4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8a4.1 4.1 0 0 1-1.8 2.7v2.2h2.9c1.7-1.6 2.7-3.8 2.7-6.5z"/>
+                    <path fill="#34a853" d="M9 18c2.4 0 4.5-.8 5.9-2.2L12 13.5c-.8.5-1.8.9-3 .9-2.3 0-4.3-1.6-5-3.7H1v2.3A9 9 0 0 0 9 18z"/>
+                    <path fill="#fbbc05" d="M4 10.7a5.4 5.4 0 0 1 0-3.4V5H1a9 9 0 0 0 0 8l3-2.3z"/>
+                    <path fill="#ea4335" d="M9 3.6c1.3 0 2.5.5 3.4 1.3L15 2.3A8.7 8.7 0 0 0 9 0a9 9 0 0 0-8 5l3 2.3c.7-2.1 2.7-3.7 5-3.7z"/>
+                  </svg>
+                  <span>Continue with Google</span>
+                  <span class="auth-arrow" aria-hidden="true">&rarr;</span>
+                </button>
+                <p class="auth-assurance">
+                  <span class="auth-assurance-dot" aria-hidden="true"></span>
+                  Accessible Audio never receives or stores your Google password.
+                </p>
               </div>
-              <div class="actions">
-                <button type="button" id="logout-button" class="ghost" hidden>Log out</button>
-              </div>
-            </form>
+              <button type="button" id="logout-button" class="ghost auth-logout" hidden>Log out</button>
+            </div>
           </section>
 
           <section class="panel upload-panel" id="upload-panel" hidden>
@@ -242,9 +245,8 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
     <script src="../scripts/voice-catalog.js?v=20260715-voices4"></script>
-    <script src="./app.js?v=20260715-payment2"></script>
+    <script src="./app.js?v=20260715-google1"></script>
     <script src="../scripts/site-motion.js?v=20260715-motion2"></script>
   </body>
 </html>
