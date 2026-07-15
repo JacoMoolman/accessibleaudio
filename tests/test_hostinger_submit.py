@@ -13,8 +13,8 @@ def test_hostinger_submit_frontend_uses_php_api_and_client_side_analysis():
     html = read("submit/index.html")
     app_js = read("submit/app.js")
 
-    assert 'href="./styles.css?v=20260715-stop1"' in html
-    assert 'src="./app.js?v=20260715-stop1"' in html
+    assert 'href="./styles.css?v=20260715-payment1"' in html
+    assert 'src="./app.js?v=20260715-payment1"' in html
     assert 'fetchJson("/api/config.php")' in app_js
     assert 'fetchJson("/api/process-file.php"' in app_js
     assert 'fetchJson("/api/files.php"' in app_js
@@ -63,14 +63,58 @@ def test_submit_narrator_sample_has_working_stop_control():
 
     assert 'id="play-narrator-sample"' in page
     assert 'id="stop-narrator-sample" disabled' in page
-    assert "styles.css?v=20260715-stop1" in page
-    assert "app.js?v=20260715-stop1" in page
+    assert "styles.css?v=20260715-payment1" in page
+    assert "app.js?v=20260715-payment1" in page
     assert 'getElementById("stop-narrator-sample")' in app_js
     assert "stopNarratorSampleButton.disabled = false" in app_js
     assert "audio.pause()" in app_js
     assert "audio.currentTime = 0" in app_js
     assert 'setStatus("Voice sample stopped.")' in app_js
     assert ".sample-actions" in submit_styles
+
+
+def test_uploads_can_be_deleted_and_status_badge_stays_readable():
+    app_js = read("submit/app.js")
+    submit_styles = read("submit/styles.css")
+    delete_endpoint = read("api/delete-file.php")
+    php_lib = read("api/lib.php")
+
+    assert 'fetchJson("/api/delete-file.php"' in app_js
+    assert "data-delete-upload" in app_js
+    assert "window.confirm" in app_js
+    assert "Delete book" in app_js
+    assert '$_SERVER[\'REQUEST_METHOD\'] !== \'POST\'' in delete_endpoint
+    assert "current_user($config)" in delete_endpoint
+    assert "delete_upload_record" in delete_endpoint
+    assert "delete_upload_record(string $uploadDir, string $userId, string $uploadId)" in php_lib
+    assert "hash('sha256', $userId)" in php_lib
+    assert "delete_private_tree" in php_lib
+    assert ".submit-section .file-row .badge" in submit_styles
+    assert "color: #052c27;" in submit_styles
+    assert "button.danger" in submit_styles
+
+
+def test_upload_is_rejected_before_storage_when_payfast_is_not_configured():
+    process_file = read("api/process-file.php")
+    php_lib = read("api/lib.php")
+
+    assert "if (!payfast_configured($config))" in process_file
+    assert "No book was uploaded" in process_file
+    assert process_file.index("payfast_configured($config)") < process_file.index("validate_upload(")
+    assert "function payfast_configured(array $config): bool" in php_lib
+
+
+def test_test_login_tokens_are_signed_and_expire():
+    php_lib = read("api/lib.php")
+    test_login = read("api/test-login.php")
+
+    assert "issue_test_token($config['test_login_password'])" in test_login
+    assert "function issue_test_token(string $secret): string" in php_lib
+    assert "function verify_test_token(string $token, string $secret): bool" in php_lib
+    assert "hash_hmac('sha256'" in php_lib
+    assert "hash_equals($expected" in php_lib
+    assert "$expiresAt < time()" in php_lib
+    assert "str_starts_with($token, 'test-')" not in php_lib
 
 
 def test_numbered_voice_catalog_is_grouped_and_priced_without_naming_vendors():
@@ -182,7 +226,7 @@ def test_sitewide_polish_is_deployed_and_respects_reduced_motion():
     for page in public_pages.values():
         assert "styles.css?v=20260715-voices4" in page
         assert "scripts/site-motion.js?v=20260715-motion2" in page
-    assert "./styles.css?v=20260715-stop1" in submit
+    assert "./styles.css?v=20260715-payment1" in submit
     assert "../scripts/site-motion.js?v=20260715-motion2" in submit
     assert '"scripts/site-motion.js"' in deploy
     assert "document.body" in motion

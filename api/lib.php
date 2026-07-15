@@ -119,7 +119,7 @@ function require_bearer_token(): string
 function current_user(array $config): array
 {
     $token = require_bearer_token();
-    if (str_starts_with($token, 'test-') && $config['enable_test_login']) {
+    if ($config['enable_test_login'] && verify_test_token($token, $config['test_login_password'])) {
         return [
             'id' => $config['test_login_user_id'],
             'email' => $config['test_login_email'] ?: 'test@accessibleaudio.local',
@@ -149,6 +149,29 @@ function current_user(array $config): array
         'email' => $data['email'] ?? '',
         'token' => $token,
     ];
+}
+
+function issue_test_token(string $secret): string
+{
+    $expiresAt = time() + 4 * 60 * 60;
+    $nonce = bin2hex(random_bytes(16));
+    $payload = $expiresAt . '.' . $nonce;
+    $signature = hash_hmac('sha256', $payload, $secret);
+    return 'test-' . $expiresAt . '-' . $nonce . '-' . $signature;
+}
+
+function verify_test_token(string $token, string $secret): bool
+{
+    if ($secret === '' || !preg_match('/^test-(\d{10})-([0-9a-f]{32})-([0-9a-f]{64})$/', $token, $matches)) {
+        return false;
+    }
+    $expiresAt = (int) $matches[1];
+    if ($expiresAt < time()) {
+        return false;
+    }
+    $payload = $matches[1] . '.' . $matches[2];
+    $expected = hash_hmac('sha256', $payload, $secret);
+    return hash_equals($expected, $matches[3]);
 }
 
 function http_request(string $method, string $url, array $headers, ?string $body = null): array
@@ -322,7 +345,7 @@ function total_cost_cents(int $wordCount, string $narratorVoice, bool $alsoWav, 
 
 function build_payfast_checkout(array $config, array $user, array $record, int $wordCount, array $options): ?array
 {
-    if (!$config['payfast_merchant_id'] || !$config['payfast_merchant_key'] || !$config['payfast_passphrase']) {
+    if (!payfast_configured($config)) {
         return null;
     }
     $baseUrl = request_base_url();
@@ -350,6 +373,11 @@ function build_payfast_checkout(array $config, array $user, array $record, int $
         'book_name' => $record['filename'],
         'fields' => $fields,
     ];
+}
+
+function payfast_configured(array $config): bool
+{
+    return (bool) ($config['payfast_merchant_id'] && $config['payfast_merchant_key'] && $config['payfast_passphrase']);
 }
 
 function payfast_signature(array $fields, string $passphrase): string
@@ -399,4 +427,93 @@ function list_records(string $uploadDir, string $userId): array
     }
     usort($records, fn ($a, $b) => strcmp($b['created_at'] ?? '', $a['created_at'] ?? ''));
     return $records;
+}
+
+function delete_upload_record(string $uploadDir, string $userId, string $uploadId): ?array
+{
+    $index = rtrim($uploadDir, '/\\') . '/uploads.jsonl';
+    if (!file_exists($index)) {
+        return null;
+    }
+
+    $handle = fopen($index, 'c+b');
+    if (!$handle) {
+        json_error('Could not open upload index', 500);
+    }
+    if (!flock($handle, LOCK_EX)) {
+        fclose($handle);
+        json_error('Could not lock upload index', 500);
+    }
+
+    rewind($handle);
+    $lines = preg_split('/\R/', stream_get_contents($handle) ?: '', -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    $remaining = [];
+    $deleted = null;
+    foreach ($lines as $line) {
+        $record = json_decode($line, true);
+        if (
+            is_array($record)
+            && ($record['user_id'] ?? '') === $userId
+            && ($record['id'] ?? '') === $uploadId
+        ) {
+            $deleted = $record;
+            continue;
+        }
+        $remaining[] = $line;
+    }
+
+    if ($deleted === null) {
+        flock($handle, LOCK_UN);
+        fclose($handle);
+        return null;
+    }
+
+    rewind($handle);
+    if (!ftruncate($handle, 0)) {
+        flock($handle, LOCK_UN);
+        fclose($handle);
+        json_error('Could not update upload index', 500);
+    }
+    $serialized = $remaining ? implode("\n", $remaining) . "\n" : '';
+    if ($serialized !== '' && fwrite($handle, $serialized) === false) {
+        flock($handle, LOCK_UN);
+        fclose($handle);
+        json_error('Could not update upload index', 500);
+    }
+    fflush($handle);
+    flock($handle, LOCK_UN);
+    fclose($handle);
+
+    $uploadPath = rtrim($uploadDir, '/\\')
+        . '/users/' . hash('sha256', $userId)
+        . '/uploads/' . $uploadId;
+    if (!delete_private_tree($uploadPath)) {
+        json_error('The upload record was removed, but its private files could not be fully deleted', 500);
+    }
+
+    return $deleted;
+}
+
+function delete_private_tree(string $path): bool
+{
+    if (!file_exists($path) && !is_link($path)) {
+        return true;
+    }
+    if (is_file($path) || is_link($path)) {
+        return unlink($path);
+    }
+
+    $entries = scandir($path);
+    if ($entries === false) {
+        return false;
+    }
+    foreach ($entries as $entry) {
+        if ($entry === '.' || $entry === '..') {
+            continue;
+        }
+        if (!delete_private_tree($path . DIRECTORY_SEPARATOR . $entry)) {
+            return false;
+        }
+    }
+    return rmdir($path);
 }

@@ -7,6 +7,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $config = hostinger_config();
 $user = current_user($config);
+if (!payfast_configured($config)) {
+    json_error('Payment checkout is temporarily unavailable. No book was uploaded. Please try again later.', 503);
+}
 $content = validate_upload($_FILES['file'] ?? [], $config['max_upload_bytes']);
 $narratorVoice = trim($_POST['narrator_voice'] ?? '');
 $voicePricing = narrator_voice_pricing($narratorVoice);

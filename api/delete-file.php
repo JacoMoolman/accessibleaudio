@@ -1,0 +1,25 @@
+<?php
+require __DIR__ . '/lib.php';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    json_error('Method not allowed', 405);
+}
+
+$config = hostinger_config();
+$user = current_user($config);
+$payload = json_decode(file_get_contents('php://input') ?: '{}', true);
+$uploadId = is_array($payload) ? trim((string) ($payload['upload_id'] ?? '')) : '';
+if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $uploadId)) {
+    json_error('Choose a valid upload to delete', 400);
+}
+
+$uploadDir = ensure_upload_dir($config);
+$deleted = delete_upload_record($uploadDir, $user['id'], $uploadId);
+if ($deleted === null) {
+    json_error('Upload not found', 404);
+}
+
+json_response([
+    'ok' => true,
+    'id' => $uploadId,
+]);

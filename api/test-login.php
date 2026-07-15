@@ -21,7 +21,7 @@ if (
 }
 
 json_response([
-    'access_token' => 'test-' . bin2hex(random_bytes(16)),
+    'access_token' => issue_test_token($config['test_login_password']),
     'token_type' => 'bearer',
     'user' => [
         'id' => $config['test_login_user_id'],

@@ -542,6 +542,13 @@ button.ghost {
   display: block;
 }
 
+.file-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .badge {
   border-radius: 999px;
   background: #e9f1ed;
@@ -659,9 +666,20 @@ button.ghost {
   color: #6ff1dc;
 }
 
-.submit-section .badge {
+.submit-section .file-row .badge {
   color: #052c27;
   background: #9ff5e7;
+}
+
+.submit-section button.danger {
+  border-color: rgba(255, 143, 143, 0.62);
+  background: rgba(118, 31, 31, 0.38);
+  color: #fff4f1;
+}
+
+.submit-section button.danger:hover {
+  border-color: #ffb0a8;
+  background: rgba(151, 42, 42, 0.56);
 }
 
 .site-footer {
@@ -961,6 +979,11 @@ button.ghost {
   .site-footer {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .file-row-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 

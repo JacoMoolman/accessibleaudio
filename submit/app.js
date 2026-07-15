@@ -30,6 +30,7 @@ const paymentPanel = document.getElementById("payment-panel");
 const paymentAmount = document.getElementById("payment-amount");
 const paymentBook = document.getElementById("payment-book");
 const payfastForm = document.getElementById("payfast-form");
+const filesList = document.getElementById("files-list");
 const playNarratorSampleButton = document.getElementById("play-narrator-sample");
 const stopNarratorSampleButton = document.getElementById("stop-narrator-sample");
 const captchaSlot = document.getElementById("captcha-slot");
@@ -245,6 +246,40 @@ uploadForm.addEventListener("submit", async (event) => {
 
 refreshFilesButton.addEventListener("click", loadFiles);
 
+filesList.addEventListener("click", async (event) => {
+  const deleteButton = event.target.closest("[data-delete-upload]");
+  if (!deleteButton || !currentSession?.access_token) {
+    return;
+  }
+
+  const uploadId = deleteButton.dataset.deleteUpload;
+  const filename = deleteButton.dataset.deleteFilename || "this book";
+  if (!window.confirm(`Delete ${filename}? This cannot be undone.`)) {
+    return;
+  }
+
+  deleteButton.disabled = true;
+  setStatus(`Deleting ${filename}...`);
+  try {
+    await fetchJson("/api/delete-file.php", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${currentSession.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ upload_id: uploadId }),
+    });
+    if (paymentPanel.dataset.uploadId === uploadId) {
+      renderPaymentCheckout(null);
+    }
+    await loadFiles();
+    setStatus(`${filename} was deleted.`);
+  } catch (error) {
+    deleteButton.disabled = false;
+    setStatus(error.message, true);
+  }
+});
+
 payfastForm.addEventListener("submit", (event) => {
   if (!payfastForm.getAttribute("action")) {
     event.preventDefault();
@@ -437,6 +472,7 @@ function renderPaymentCheckout(payment) {
   payfastForm.removeAttribute("action");
   paymentAmount.textContent = "R 0.00";
   paymentBook.textContent = "";
+  delete paymentPanel.dataset.uploadId;
   paymentPanel.hidden = true;
   if (!payment?.form_action || !payment?.fields) {
     return;
@@ -445,6 +481,7 @@ function renderPaymentCheckout(payment) {
   payfastForm.action = payment.form_action;
   paymentAmount.textContent = payment.amount_zar || payment.fields.amount || "R 0.00";
   paymentBook.textContent = payment.book_name || payment.fields.item_name || "";
+  paymentPanel.dataset.uploadId = payment.fields.custom_str1 || "";
   Object.entries(payment.fields).forEach(([name, value]) => {
     const input = document.createElement("input");
     input.type = "hidden";
@@ -667,12 +704,11 @@ async function loadFiles() {
       Authorization: `Bearer ${currentSession.access_token}`,
     },
   });
-  const list = document.getElementById("files-list");
   if (!files.length) {
-    list.innerHTML = `<p class="empty">No uploads yet.</p>`;
+    filesList.innerHTML = `<p class="empty">No uploads yet.</p>`;
     return;
   }
-  list.innerHTML = files.map(renderFile).join("");
+  filesList.innerHTML = files.map(renderFile).join("");
 }
 
 function renderFile(file) {
@@ -683,7 +719,16 @@ function renderFile(file) {
         <strong>${escapeHtml(file.filename)}</strong>
         <span>${escapeHtml(created)}</span>
       </div>
-      <span class="badge">${escapeHtml(file.status)}</span>
+      <div class="file-row-actions">
+        <span class="badge">${escapeHtml(file.status)}</span>
+        <button
+          type="button"
+          class="danger"
+          data-delete-upload="${escapeHtml(file.id)}"
+          data-delete-filename="${escapeHtml(file.filename)}"
+          aria-label="Delete ${escapeHtml(file.filename)}"
+        >Delete book</button>
+      </div>
     </article>
   `;
 }
