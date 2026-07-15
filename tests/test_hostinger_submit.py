@@ -307,6 +307,24 @@ def test_faq_is_public_and_linked_from_the_site():
         assert '<a href="https://accessibleaudio.co.za/faq.html">FAQ</a>' in page
 
 
+def test_all_public_headers_label_the_library_as_sample_audiobooks():
+    relative_nav_pages = [
+        read("index.html"),
+        read("audiobooks.html"),
+        read("contact.html"),
+        read("faq.html"),
+        read("voice-samples.html"),
+    ]
+    for page in relative_nav_pages:
+        assert ">Sample AudioBooks</a>" in page
+        assert ">Audiobooks</a>" not in page
+
+    absolute_nav_pages = [read("submit/index.html"), read("frontend/index.html")]
+    for page in absolute_nav_pages:
+        assert '<a href="https://accessibleaudio.co.za/audiobooks.html">Sample AudioBooks</a>' in page
+        assert ">Audiobooks</a>" not in page
+
+
 def test_paid_payfast_notifications_are_verified_and_idempotent():
     endpoint = read("api/payfast-notify.php")
     smtp = read("api/smtp.php")
