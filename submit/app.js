@@ -31,6 +31,7 @@ const paymentAmount = document.getElementById("payment-amount");
 const paymentBook = document.getElementById("payment-book");
 const payfastForm = document.getElementById("payfast-form");
 const playNarratorSampleButton = document.getElementById("play-narrator-sample");
+const stopNarratorSampleButton = document.getElementById("stop-narrator-sample");
 const captchaSlot = document.getElementById("captcha-slot");
 const VOICE_CATALOG = window.ACCESSIBLE_AUDIO_VOICES || [];
 const VOICES_BY_LABEL = Object.fromEntries(
@@ -166,6 +167,7 @@ document.getElementById("make-video").addEventListener("change", () => {
   renderPaymentCheckout(null);
 });
 document.getElementById("narrator-voice").addEventListener("change", () => {
+  stopVoiceSample();
   updateCostEstimate();
   renderPaymentCheckout(null);
 });
@@ -174,6 +176,10 @@ fileInput.addEventListener("change", analyzeSelectedFile);
 
 playNarratorSampleButton.addEventListener("click", () => {
   playVoiceSample(document.getElementById("narrator-voice").value);
+});
+
+stopNarratorSampleButton.addEventListener("click", () => {
+  stopVoiceSample(true);
 });
 
 uploadForm.addEventListener("submit", async (event) => {
@@ -503,7 +509,7 @@ function setProductionOptionsEnabled(enabled) {
   productionOptions.disabled = !enabled;
 }
 
-function playVoiceSample(voiceName) {
+async function playVoiceSample(voiceName) {
   if (!voiceName) {
     setStatus("Choose a narrator voice first.", true);
     return;
@@ -514,20 +520,61 @@ function playVoiceSample(voiceName) {
     return;
   }
 
-  if (currentVoiceSampleAudio) {
-    currentVoiceSampleAudio.pause();
-    currentVoiceSampleAudio.currentTime = 0;
-  }
-  currentVoiceSampleAudio = new Audio(sampleUrl);
-  currentVoiceSampleAudio.addEventListener("error", () => {
+  stopVoiceSample();
+  const audio = new Audio(sampleUrl);
+  currentVoiceSampleAudio = audio;
+
+  const reset = () => {
+    if (currentVoiceSampleAudio === audio) {
+      currentVoiceSampleAudio = null;
+      resetVoiceSampleControls();
+    }
+  };
+  audio.addEventListener("ended", reset, { once: true });
+  audio.addEventListener("error", () => {
+    reset();
     setStatus(`Could not play the ${voiceName} sample file.`, true);
-  });
-  const playPromise = currentVoiceSampleAudio.play();
-  if (playPromise) {
-    playPromise.catch(() => {
+  }, { once: true });
+
+  try {
+    const playPromise = audio.play();
+    if (playPromise) {
+      await playPromise;
+    }
+    if (currentVoiceSampleAudio === audio) {
+      playNarratorSampleButton.textContent = "Playing sample";
+      stopNarratorSampleButton.disabled = false;
+      setStatus(`Playing the ${voiceName} sample.`);
+    }
+  } catch {
+    const wasCurrentSample = currentVoiceSampleAudio === audio;
+    reset();
+    if (wasCurrentSample && !audio.error) {
       setStatus(`Could not play the ${voiceName} sample file.`, true);
-    });
+    }
   }
+}
+
+function stopVoiceSample(announce = false) {
+  const audio = currentVoiceSampleAudio;
+  currentVoiceSampleAudio = null;
+  if (audio) {
+    audio.pause();
+    try {
+      audio.currentTime = 0;
+    } catch {
+      // The sample may not have loaded enough metadata to seek yet.
+    }
+  }
+  resetVoiceSampleControls();
+  if (announce && audio) {
+    setStatus("Voice sample stopped.");
+  }
+}
+
+function resetVoiceSampleControls() {
+  playNarratorSampleButton.textContent = "Play sample";
+  stopNarratorSampleButton.disabled = true;
 }
 
 function cssEscape(value) {

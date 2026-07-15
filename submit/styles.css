@@ -371,6 +371,16 @@ h2 {
   margin-top: 8px;
 }
 
+.sample-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sample-actions button {
+  min-width: 0;
+}
+
 .voice-pricing-note {
   display: flex;
   flex-wrap: wrap;
@@ -480,6 +490,16 @@ button {
 
 button:hover {
   background: var(--green-dark);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+button:disabled:hover {
+  border-color: inherit;
+  background: inherit;
 }
 
 button.secondary {

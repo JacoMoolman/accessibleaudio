@@ -13,8 +13,8 @@ def test_hostinger_submit_frontend_uses_php_api_and_client_side_analysis():
     html = read("submit/index.html")
     app_js = read("submit/app.js")
 
-    assert 'href="./styles.css?v=20260715-voices4"' in html
-    assert 'src="./app.js?v=20260715-voices4"' in html
+    assert 'href="./styles.css?v=20260715-stop1"' in html
+    assert 'src="./app.js?v=20260715-stop1"' in html
     assert 'fetchJson("/api/config.php")' in app_js
     assert 'fetchJson("/api/process-file.php"' in app_js
     assert 'fetchJson("/api/files.php"' in app_js
@@ -54,6 +54,23 @@ def test_voice_sample_controls_use_the_dark_site_palette():
     assert "#fffdf7" not in styles
     assert "background: rgba(7, 61, 53, 0.72);" in styles
     assert "background: var(--soft);" in styles
+
+
+def test_submit_narrator_sample_has_working_stop_control():
+    page = read("submit/index.html")
+    app_js = read("submit/app.js")
+    submit_styles = read("submit/styles.css")
+
+    assert 'id="play-narrator-sample"' in page
+    assert 'id="stop-narrator-sample" disabled' in page
+    assert "styles.css?v=20260715-stop1" in page
+    assert "app.js?v=20260715-stop1" in page
+    assert 'getElementById("stop-narrator-sample")' in app_js
+    assert "stopNarratorSampleButton.disabled = false" in app_js
+    assert "audio.pause()" in app_js
+    assert "audio.currentTime = 0" in app_js
+    assert 'setStatus("Voice sample stopped.")' in app_js
+    assert ".sample-actions" in submit_styles
 
 
 def test_numbered_voice_catalog_is_grouped_and_priced_without_naming_vendors():
@@ -165,7 +182,7 @@ def test_sitewide_polish_is_deployed_and_respects_reduced_motion():
     for page in public_pages.values():
         assert "styles.css?v=20260715-voices4" in page
         assert "scripts/site-motion.js?v=20260715-motion2" in page
-    assert "./styles.css?v=20260715-voices4" in submit
+    assert "./styles.css?v=20260715-stop1" in submit
     assert "../scripts/site-motion.js?v=20260715-motion2" in submit
     assert '"scripts/site-motion.js"' in deploy
     assert "document.body" in motion
