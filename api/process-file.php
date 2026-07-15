@@ -50,6 +50,7 @@ $wordCount = count_words($content);
 $record = [
     'id' => $uploadId,
     'user_id' => $user['id'],
+    'user_email' => strtolower(trim((string) $user['email'])),
     'filename' => $filename,
     's3_bucket' => 'hostinger-local',
     's3_key' => $userPath . '/' . $filename,

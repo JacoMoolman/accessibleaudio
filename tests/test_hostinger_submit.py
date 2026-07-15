@@ -307,6 +307,59 @@ def test_faq_is_public_and_linked_from_the_site():
         assert '<a href="https://accessibleaudio.co.za/faq.html">FAQ</a>' in page
 
 
+def test_paid_payfast_notifications_are_verified_and_idempotent():
+    endpoint = read("api/payfast-notify.php")
+    smtp = read("api/smtp.php")
+    php_lib = read("api/lib.php")
+    process_file = read("api/process-file.php")
+
+    assert "payfast_notification_signature" in endpoint
+    assert "payfast_server_validation" in endpoint
+    assert "/eng/query/validate" in endpoint
+    assert "payment_status" in endpoint and "COMPLETE" in endpoint
+    assert "Payment amount does not match the upload" in endpoint
+    assert "total_cost_cents" in endpoint
+    assert "admin_notification_claim" in endpoint
+    assert "admin_notified_at" in endpoint
+    assert "aa_send_smtp_email" in endpoint
+    assert "AUTH LOGIN" in smtp
+    assert "function update_upload_record" in php_lib
+    assert "function find_upload_record_any" in php_lib
+    assert "'user_email' => strtolower" in process_file
+
+
+def test_private_admin_queue_requires_configured_google_admin_and_secure_download():
+    html = read("admin/index.html")
+    app_js = read("admin/app.js")
+    styles = read("admin/styles.css")
+    endpoint = read("api/admin-files.php")
+    download = read("api/admin-download.php")
+    php_lib = read("api/lib.php")
+    deploy = read("scripts/deploy-hostinger.ps1")
+    sitemap = read("sitemap.xml")
+
+    assert 'content="noindex,nofollow,noarchive"' in html
+    assert "Continue with Google" in html
+    assert 'provider: "google"' in app_js
+    assert 'redirectTo: `${window.location.origin}/admin/`' in app_js
+    assert 'fetchJson("/api/admin-files.php"' in app_js
+    assert "Authorization: `Bearer ${currentSession.access_token}`" in app_js
+    assert "response.blob()" in app_js
+    assert "require_admin($config, $user)" in endpoint
+    assert "list_paid_records" in endpoint
+    assert "require_admin($config, $user)" in download
+    assert "find_upload_record_any" in download
+    assert "Content-Disposition: attachment" in download
+    assert "str_starts_with($realPath, $root . DIRECTORY_SEPARATOR)" in download
+    assert "function require_admin" in php_lib
+    assert "hash_equals($adminEmail, $userEmail)" in php_lib
+    assert "@media (prefers-reduced-motion: reduce)" in styles
+    assert '"admin/index.html"' in deploy
+    assert '"admin/app.js"' in deploy
+    assert '"admin/styles.css"' in deploy
+    assert "/admin/" not in sitemap
+
+
 def test_hostinger_php_backend_stores_uploads_locally_without_aws_or_s3_keys():
     api_files = list((ROOT / "api").glob("*.php"))
     assert api_files

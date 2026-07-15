@@ -61,6 +61,7 @@ function hostinger_config(): array
         'contact_smtp_port' => (int) config_value($fileConfig, 'EMAIL_SMTP_PORT', 465),
         'contact_smtp_username' => config_value($fileConfig, 'EMAIL_ADDRESS', null),
         'contact_smtp_password' => config_value($fileConfig, 'EMAIL_PASSWORD', null),
+        'admin_email' => config_value($fileConfig, 'ADMIN_EMAIL', null),
         'max_upload_bytes' => (int) config_value($fileConfig, 'MAX_UPLOAD_BYTES', 10 * 1024 * 1024),
         'upload_dir' => config_value($fileConfig, 'UPLOAD_DIR', dirname(__DIR__) . '/private_uploads'),
         'payfast_merchant_id' => config_value($fileConfig, 'PAYFAST_MERCHANT_ID', null),
@@ -149,6 +150,15 @@ function current_user(array $config): array
         'email' => $data['email'] ?? '',
         'token' => $token,
     ];
+}
+
+function require_admin(array $config, array $user): void
+{
+    $adminEmail = strtolower(trim((string) ($config['admin_email'] ?? '')));
+    $userEmail = strtolower(trim((string) ($user['email'] ?? '')));
+    if ($adminEmail === '' || $userEmail === '' || !hash_equals($adminEmail, $userEmail)) {
+        json_error('Admin access is restricted to the configured Google account', 403);
+    }
 }
 
 function issue_test_token(string $secret): string
@@ -413,6 +423,16 @@ function append_record(string $uploadDir, array $record): void
 
 function list_records(string $uploadDir, string $userId): array
 {
+    $records = array_values(array_filter(
+        list_all_records($uploadDir),
+        static fn(array $record): bool => ($record['user_id'] ?? '') === $userId,
+    ));
+    usort($records, fn ($a, $b) => strcmp($b['created_at'] ?? '', $a['created_at'] ?? ''));
+    return $records;
+}
+
+function list_all_records(string $uploadDir): array
+{
     $index = rtrim($uploadDir, '/\\') . '/uploads.jsonl';
     if (!file_exists($index)) {
         return [];
@@ -421,11 +441,20 @@ function list_records(string $uploadDir, string $userId): array
     $lines = file($index, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
     foreach ($lines as $line) {
         $record = json_decode($line, true);
-        if (is_array($record) && ($record['user_id'] ?? '') === $userId) {
+        if (is_array($record)) {
             $records[] = $record;
         }
     }
-    usort($records, fn ($a, $b) => strcmp($b['created_at'] ?? '', $a['created_at'] ?? ''));
+    return $records;
+}
+
+function list_paid_records(string $uploadDir): array
+{
+    $records = array_values(array_filter(
+        list_all_records($uploadDir),
+        static fn(array $record): bool => ($record['status'] ?? '') === 'paid',
+    ));
+    usort($records, fn ($a, $b) => strcmp($b['paid_at'] ?? '', $a['paid_at'] ?? ''));
     return $records;
 }
 
@@ -437,6 +466,65 @@ function find_upload_record(string $uploadDir, string $userId, string $uploadId)
         }
     }
     return null;
+}
+
+function find_upload_record_any(string $uploadDir, string $uploadId): ?array
+{
+    foreach (list_all_records($uploadDir) as $record) {
+        if (($record['id'] ?? '') === $uploadId) {
+            return $record;
+        }
+    }
+    return null;
+}
+
+function update_upload_record(string $uploadDir, string $uploadId, callable $transform): ?array
+{
+    $index = rtrim($uploadDir, '/\\') . '/uploads.jsonl';
+    if (!file_exists($index)) {
+        return null;
+    }
+    $handle = fopen($index, 'c+b');
+    if (!$handle || !flock($handle, LOCK_EX)) {
+        if (is_resource($handle)) {
+            fclose($handle);
+        }
+        throw new RuntimeException('Could not lock upload index');
+    }
+    try {
+        rewind($handle);
+        $lines = preg_split('/\R/', stream_get_contents($handle) ?: '', -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $updated = null;
+        $serialized = [];
+        foreach ($lines as $line) {
+            $record = json_decode($line, true);
+            if (is_array($record) && ($record['id'] ?? '') === $uploadId) {
+                $record = $transform($record);
+                if (!is_array($record)) {
+                    throw new RuntimeException('Upload record update returned invalid data');
+                }
+                $updated = $record;
+                $line = json_encode($record, JSON_UNESCAPED_SLASHES);
+            }
+            $serialized[] = $line;
+        }
+        if ($updated === null) {
+            return null;
+        }
+        rewind($handle);
+        if (!ftruncate($handle, 0)) {
+            throw new RuntimeException('Could not update upload index');
+        }
+        $body = $serialized ? implode("\n", $serialized) . "\n" : '';
+        if ($body !== '' && fwrite($handle, $body) === false) {
+            throw new RuntimeException('Could not update upload index');
+        }
+        fflush($handle);
+        return $updated;
+    } finally {
+        flock($handle, LOCK_UN);
+        fclose($handle);
+    }
 }
 
 function delete_upload_record(string $uploadDir, string $userId, string $uploadId): ?array

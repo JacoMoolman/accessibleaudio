@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow,noarchive">
+    <title>Production Queue | Accessible Audio</title>
+    <link rel="icon" href="../favicon.svg?v=20260612-private" type="image/svg+xml">
+    <link rel="stylesheet" href="./styles.css?v=20260715-admin1">
+  </head>
+  <body>
+    <header class="admin-header">
+      <a class="brand" href="../" aria-label="Accessible Audio home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>Accessible Audio</span>
+      </a>
+      <div class="header-state">
+        <span class="private-badge">Private</span>
+        <button class="text-button" id="logout-button" type="button" hidden>Log out</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Paid production desk</p>
+          <h1 id="page-title">Books ready<br>to become audio.</h1>
+        </div>
+        <p class="hero-note">A private queue for verified PayFast orders. Only the configured Google administrator can view or download manuscripts.</p>
+      </section>
+
+      <section class="auth-card" id="auth-card" aria-labelledby="auth-title">
+        <div class="auth-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+        <div>
+          <p class="eyebrow">Administrator access</p>
+          <h2 id="auth-title">Continue with Google.</h2>
+          <p id="auth-state">Sign in with the authorised Accessible Audio administrator account.</p>
+          <button class="google-button" id="google-button" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285f4" d="M21.35 12.2c0-.7-.06-1.2-.2-1.73H12v3.32h5.37a4.6 4.6 0 0 1-1.99 2.94v2.15h3.22c1.88-1.73 2.75-4.28 2.75-6.68z"/><path fill="#34a853" d="M12 21.7c2.7 0 4.96-.9 6.6-2.43l-3.22-2.54c-.9.6-2.05.96-3.38.96-2.6 0-4.8-1.75-5.6-4.12H3.08v2.22A9.97 9.97 0 0 0 12 21.7z"/><path fill="#fbbc05" d="M6.4 13.57A6 6 0 0 1 6.1 12c0-.55.1-1.08.29-1.57V8.21H3.08A9.7 9.7 0 0 0 2.05 12c0 1.36.37 2.65 1.03 3.79l3.32-2.22z"/><path fill="#ea4335" d="M12 6.31c1.47 0 2.78.5 3.82 1.49l2.85-2.85A9.57 9.57 0 0 0 12 2.3a9.97 9.97 0 0 0-8.92 5.91l3.32 2.22c.8-2.37 3-4.12 5.6-4.12z"/></svg>
+            Continue with Google
+          </button>
+        </div>
+      </section>
+
+      <section class="queue" id="queue" hidden aria-labelledby="queue-title">
+        <div class="queue-heading">
+          <div>
+            <p class="eyebrow">Verified payments</p>
+            <h2 id="queue-title">Production queue</h2>
+          </div>
+          <button class="refresh-button" id="refresh-button" type="button">Refresh queue</button>
+        </div>
+
+        <div class="summary-grid" aria-label="Queue summary">
+          <article><strong id="paid-count">0</strong><span>paid books</span></article>
+          <article><strong id="word-count">0</strong><span>source words</span></article>
+          <article><strong id="paid-total">R 0.00</strong><span>payments received</span></article>
+        </div>
+
+        <label class="search-field">
+          <span>Search by book, customer, email or payment ID</span>
+          <input id="search-input" type="search" placeholder="Search paid work">
+        </label>
+        <p class="status" id="status" role="status" aria-live="polite"></p>
+        <div class="job-list" id="job-list"></div>
+      </section>
+    </main>
+
+    <template id="job-template">
+      <article class="job-card">
+        <div class="job-main">
+          <span class="paid-chip">Paid</span>
+          <h3 data-field="filename"></h3>
+          <p class="job-meta"><span data-field="payer"></span> · <span data-field="paid_at"></span></p>
+        </div>
+        <dl>
+          <div><dt>Upload account</dt><dd data-field="user_email"></dd></div>
+          <div><dt>Payer email</dt><dd data-field="payer_email"></dd></div>
+          <div><dt>Payment</dt><dd data-field="payment"></dd></div>
+          <div><dt>PayFast ID</dt><dd data-field="payfast_payment_id"></dd></div>
+          <div><dt>Production</dt><dd data-field="production"></dd></div>
+          <div><dt>Storage</dt><dd data-field="storage_key"></dd></div>
+        </dl>
+        <button class="download-button" type="button" data-download>Download manuscript</button>
+      </article>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./app.js?v=20260715-admin1"></script>
+  </body>
+</html>

@@ -20,6 +20,9 @@ $voiceCatalogScriptPath = Join-Path $root "scripts\voice-catalog.js"
 $voiceSamplesScriptPath = Join-Path $root "scripts\voice-samples.js"
 $submitIndexPath = Join-Path $root "submit\index.html"
 $submitAppPath = Join-Path $root "submit\app.js"
+$adminIndexPath = Join-Path $root "admin\index.html"
+$adminAppPath = Join-Path $root "admin\app.js"
+$adminStylesPath = Join-Path $root "admin\styles.css"
 $contactEndpointPath = Join-Path $root "api\contact.php"
 $apiLibPath = Join-Path $root "api\lib.php"
 $apiConfigPath = Join-Path $root "api\config.php"
@@ -83,6 +86,9 @@ Assert-FileExists $voiceCatalogScriptPath
 Assert-FileExists $voiceSamplesScriptPath
 Assert-FileExists $submitIndexPath
 Assert-FileExists $submitAppPath
+Assert-FileExists $adminIndexPath
+Assert-FileExists $adminAppPath
+Assert-FileExists $adminStylesPath
 Assert-FileExists $contactEndpointPath
 Assert-FileExists $apiLibPath
 Assert-FileExists $apiConfigPath
@@ -103,6 +109,9 @@ $voiceCatalogScript = Get-Content -LiteralPath $voiceCatalogScriptPath -Raw
 $voiceSamplesScript = Get-Content -LiteralPath $voiceSamplesScriptPath -Raw
 $submitIndex = Get-Content -LiteralPath $submitIndexPath -Raw
 $submitApp = Get-Content -LiteralPath $submitAppPath -Raw
+$adminIndex = Get-Content -LiteralPath $adminIndexPath -Raw
+$adminApp = Get-Content -LiteralPath $adminAppPath -Raw
+$adminStyles = Get-Content -LiteralPath $adminStylesPath -Raw
 $contactEndpoint = Get-Content -LiteralPath $contactEndpointPath -Raw
 $apiLib = Get-Content -LiteralPath $apiLibPath -Raw
 $apiConfig = Get-Content -LiteralPath $apiConfigPath -Raw
@@ -242,6 +251,13 @@ Assert-Contains $submitApp 'provider: "google"' "submit app"
 Assert-NotContains $submitApp "signInWithPassword" "submit app"
 Assert-NotContains $submitApp "auth.signUp" "submit app"
 Assert-NotContains $submitApp "tryTestLogin" "submit app"
+Assert-Contains $adminIndex 'content="noindex,nofollow,noarchive"' "admin page"
+Assert-Contains $adminIndex "Continue with Google" "admin page"
+Assert-Contains $adminApp 'provider: "google"' "admin app"
+Assert-Contains $adminApp '/api/admin-files.php' "admin app"
+Assert-Contains $adminApp 'response.blob()' "admin app"
+Assert-Contains $adminStyles "@media (prefers-reduced-motion: reduce)" "admin stylesheet"
+Assert-NotContains $sitemap "/admin/" "sitemap"
 Assert-Contains $index '<a href="faq.html">FAQ</a>' "homepage"
 Assert-Contains $audiobooks '<a href="faq.html">FAQ</a>' "audiobook library"
 Assert-Contains $contact '<a href="faq.html">FAQ</a>' "contact page"
