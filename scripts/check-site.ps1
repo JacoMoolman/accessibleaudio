@@ -5,6 +5,7 @@ $indexPath = Join-Path $root "index.html"
 $audiobooksPath = Join-Path $root "audiobooks.html"
 $contactPath = Join-Path $root "contact.html"
 $faqPath = Join-Path $root "faq.html"
+$termsPath = Join-Path $root "terms.html"
 $voiceSamplesPath = Join-Path $root "voice-samples.html"
 $robotsPath = Join-Path $root "robots.txt"
 $sitemapPath = Join-Path $root "sitemap.xml"
@@ -71,6 +72,7 @@ Assert-FileExists $indexPath
 Assert-FileExists $audiobooksPath
 Assert-FileExists $contactPath
 Assert-FileExists $faqPath
+Assert-FileExists $termsPath
 Assert-FileExists $voiceSamplesPath
 Assert-FileExists $robotsPath
 Assert-FileExists $sitemapPath
@@ -97,6 +99,7 @@ $index = Get-Content -LiteralPath $indexPath -Raw
 $audiobooks = Get-Content -LiteralPath $audiobooksPath -Raw
 $contact = Get-Content -LiteralPath $contactPath -Raw
 $faq = Get-Content -LiteralPath $faqPath -Raw
+$terms = Get-Content -LiteralPath $termsPath -Raw
 $voiceSamples = Get-Content -LiteralPath $voiceSamplesPath -Raw
 $robots = Get-Content -LiteralPath $robotsPath -Raw
 $sitemap = Get-Content -LiteralPath $sitemapPath -Raw
@@ -230,7 +233,7 @@ Assert-Contains $voiceCatalogScript "/assets/voice-samples/catalog/voice-" "voic
 Assert-Contains $voiceSamplesScript "window.ACCESSIBLE_AUDIO_VOICES" "voice sample script"
 Assert-Contains $submitIndex "../scripts/voice-catalog.js?v=20260715-voices4" "submit page"
 Assert-Contains $submitIndex "./styles.css?v=20260715-google1" "submit page"
-Assert-Contains $submitIndex "./app.js?v=20260716-paybutton1" "submit page"
+Assert-Contains $submitIndex "./app.js?v=20260716-terms1" "submit page"
 Assert-Contains $submitIndex 'id="stop-narrator-sample" disabled' "submit page"
 Assert-Contains $submitApp '/api/delete-file.php' "submit script"
 Assert-Contains $submitApp 'data-delete-upload' "submit script"
@@ -240,6 +243,14 @@ Assert-Contains $submitIndex "../scripts/site-motion.js?v=20260715-motion2" "sub
 Assert-NotContains $submitIndex "The numbers match the" "submit page"
 Assert-Contains $submitIndex "Local: 0.5c/word." "submit page"
 Assert-Contains $submitIndex "Cloud: 0.75c/word." "submit page"
+Assert-Contains $submitIndex 'id="terms-accepted" type="checkbox" required' "submit page"
+Assert-Contains $submitIndex 'href="https://accessibleaudio.co.za/terms.html" target="_blank" rel="noopener"' "submit page"
+Assert-Contains $submitApp 'formData.append("terms_accepted"' "submit app"
+Assert-Contains $submitApp 'formData.append("terms_version", "2026-07-16")' "submit app"
+Assert-Contains $terms "Terms and conditions." "terms page"
+Assert-Contains $terms 'href="submit/"' "terms page"
+Assert-Contains $sitemap "https://accessibleaudio.co.za/terms.html" "sitemap"
+Assert-Contains $deploy '"terms.html"' "deployment script"
 Assert-Contains $submitIndex 'href="https://accessibleaudio.co.za/voice-samples.html">Voice samples</a>' "submit page"
 Assert-Contains $submitApp "VOICE_CATALOG.map" "submit app"
 Assert-Contains $submitApp "populateNarratorVoices" "submit app"

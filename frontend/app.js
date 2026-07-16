@@ -132,6 +132,8 @@ uploadForm.addEventListener("submit", async (event) => {
   formData.append("source_language", fileAnalysis.source_language || "");
   formData.append("chapter_titles", JSON.stringify(fileAnalysis.chapters.map((chapter) => chapter.title)));
   formData.append("make_video", "false");
+  formData.append("terms_accepted", document.getElementById("terms-accepted").checked ? "true" : "false");
+  formData.append("terms_version", "2026-07-16");
 
   setStatus("Uploading...");
   try {

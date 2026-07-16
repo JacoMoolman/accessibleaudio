@@ -23,6 +23,7 @@ from backend.storage import (
 
 AuthDependency = Callable[[str | None], Awaitable[AuthenticatedUser]]
 BOOK_COST_PER_WORD_CENTS = 0.5
+TERMS_VERSION = "2026-07-16"
 OPTION_COSTS_CENTS = {
     "also_wav": 2500,
     "translate": 5000,
@@ -184,7 +185,14 @@ def create_app(
         source_language: Annotated[str, Form()] = "",
         chapter_titles: Annotated[str, Form()] = "",
         make_video: Annotated[bool, Form()] = False,
+        terms_accepted: Annotated[bool, Form()] = False,
+        terms_version: Annotated[str, Form()] = "",
     ) -> dict[str, Any]:
+        if not terms_accepted or terms_version != TERMS_VERSION:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You must agree to the current Terms and Conditions before uploading.",
+            )
         content = await file.read()
         try:
             validate_txt_upload(file.filename or "", content, settings.max_upload_bytes)

@@ -751,6 +751,22 @@ button.ghost {
   color: var(--submit-muted);
 }
 
+.terms-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.terms-consent input {
+  flex: 0 0 auto;
+  margin-top: 4px;
+}
+
+.terms-consent a {
+  color: #f0c263;
+  font-weight: 800;
+}
+
 .submit-section .panel {
   color: var(--submit-ink);
   background: var(--submit-panel);

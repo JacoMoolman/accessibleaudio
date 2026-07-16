@@ -374,6 +374,8 @@ def test_submit_page_has_voice_sample_without_translation_or_video_controls():
     assert 'id="translate"' not in response.text
     assert 'name="translation-language"' not in response.text
     assert 'id="make-video"' not in response.text
+    assert 'id="terms-accepted" type="checkbox" required' in response.text
+    assert 'href="https://accessibleaudio.co.za/terms.html" target="_blank" rel="noopener"' in response.text
 
 
 def test_submit_page_describes_audiobook_ready_txt_without_storage_detail():
@@ -566,6 +568,8 @@ def test_test_login_token_uploads_without_supabase_confirmation():
             "source_language": "English",
             "chapter_titles": json.dumps(["Chapter 1"]),
             "make_video": "false",
+            "terms_accepted": "true",
+            "terms_version": "2026-07-16",
         },
     )
 
@@ -644,6 +648,26 @@ def test_supabase_user_endpoint_verifier_accepts_valid_token():
     assert http_client.request["headers"]["Authorization"] == "Bearer valid-token"
 
 
+def test_process_file_requires_current_terms_acceptance_before_storage():
+    client, repo, storage = make_client()
+
+    response = client.post(
+        "/process-file",
+        headers={"Authorization": "Bearer valid-token"},
+        files={"file": ("Book One.txt", io.BytesIO(b"Chapter 1\nHello"), "text/plain")},
+        data={
+            "narrator_voice": "Zulu Female",
+            "terms_accepted": "false",
+            "terms_version": "2026-07-16",
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "You must agree to the current Terms and Conditions before uploading."
+    assert repo.created == []
+    assert storage.uploads == []
+
+
 def test_process_file_uploads_txt_to_s3_and_saves_metadata():
     client, repo, storage = make_client()
 
@@ -658,6 +682,8 @@ def test_process_file_uploads_txt_to_s3_and_saves_metadata():
             "translate": "false",
             "translation_languages": "",
             "make_video": "false",
+            "terms_accepted": "true",
+            "terms_version": "2026-07-16",
         },
     )
 
@@ -704,6 +730,8 @@ def test_process_file_returns_signed_payfast_checkout_for_calculated_amount():
             "translate": "true",
             "translation_languages": "Afrikaans",
             "make_video": "true",
+            "terms_accepted": "true",
+            "terms_version": "2026-07-16",
             "amount": "1.00",
         },
     )
@@ -741,6 +769,8 @@ def test_process_file_uploads_options_text_file_next_to_book():
             "source_language": "English",
             "chapter_titles": json.dumps(["Chapter One", "CHAPTER TWO"]),
             "make_video": "true",
+            "terms_accepted": "true",
+            "terms_version": "2026-07-16",
         },
     )
 
@@ -781,6 +811,8 @@ def test_process_file_keeps_source_language_out_of_database_record():
             "source_language": "English",
             "chapter_titles": json.dumps(["Chapter 1"]),
             "make_video": "false",
+            "terms_accepted": "true",
+            "terms_version": "2026-07-16",
         },
     )
 
@@ -805,6 +837,8 @@ def test_process_file_tolerates_malformed_chapter_titles_form_value():
             "source_language": "English",
             "chapter_titles": "[Chapter 1,Chapter 2]",
             "make_video": "false",
+            "terms_accepted": "true",
+            "terms_version": "2026-07-16",
         },
     )
 

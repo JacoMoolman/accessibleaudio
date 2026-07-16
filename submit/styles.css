@@ -566,6 +566,22 @@ h2 {
   color: #f0c263;
 }
 
+.terms-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.terms-consent input {
+  flex: 0 0 auto;
+  margin-top: 4px;
+}
+
+.terms-consent a {
+  color: #f0c263;
+  font-weight: 800;
+}
+
 label,
 legend {
   color: var(--ink);

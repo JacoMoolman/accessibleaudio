@@ -13,6 +13,10 @@ $user = current_user($config);
 if (!payfast_configured($config)) {
     json_error('Payment checkout is temporarily unavailable. No book was uploaded. Please try again later.', 503);
 }
+$termsVersion = '2026-07-16';
+if (!bool_value('terms_accepted') || !hash_equals($termsVersion, trim((string) ($_POST['terms_version'] ?? '')))) {
+    json_error('You must agree to the current Terms and Conditions before uploading.', 400);
+}
 $content = validate_upload($_FILES['file'] ?? [], $config['max_upload_bytes']);
 $narratorVoice = trim($_POST['narrator_voice'] ?? '');
 $voicePricing = narrator_voice_pricing($narratorVoice);
@@ -67,6 +71,9 @@ $record = [
     'also_wav' => $options['also_wav'],
     'translate' => $options['translate'],
     'make_video' => $options['make_video'],
+    'terms_accepted' => true,
+    'terms_version' => $termsVersion,
+    'terms_accepted_at' => gmdate('c'),
 ];
 
 file_put_contents($absoluteDir . '/options.txt', build_options_text($record, $options), LOCK_EX);

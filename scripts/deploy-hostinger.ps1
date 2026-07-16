@@ -185,6 +185,7 @@ $files = @(
   "contact.html",
   "voice-samples.html",
   "faq.html",
+  "terms.html",
   "submit/index.html",
   "submit/app.js",
   "submit/styles.css",
