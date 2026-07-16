@@ -232,7 +232,7 @@ Assert-Contains $voiceCatalogScript "cloudCostPerWordCents = localCostPerWordCen
 Assert-Contains $voiceCatalogScript "/assets/voice-samples/catalog/voice-" "voice catalog script"
 Assert-Contains $voiceSamplesScript "window.ACCESSIBLE_AUDIO_VOICES" "voice sample script"
 Assert-Contains $submitIndex "../scripts/voice-catalog.js?v=20260715-voices4" "submit page"
-Assert-Contains $submitIndex "./styles.css?v=20260715-google1" "submit page"
+Assert-Contains $submitIndex "./styles.css?v=20260716-terms1" "submit page"
 Assert-Contains $submitIndex "./app.js?v=20260716-terms1" "submit page"
 Assert-Contains $submitIndex 'id="stop-narrator-sample" disabled' "submit page"
 Assert-Contains $submitApp '/api/delete-file.php' "submit script"

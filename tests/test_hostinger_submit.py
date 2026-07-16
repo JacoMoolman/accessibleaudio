@@ -13,7 +13,7 @@ def test_hostinger_submit_frontend_uses_php_api_and_client_side_analysis():
     html = read("submit/index.html")
     app_js = read("submit/app.js")
 
-    assert 'href="./styles.css?v=20260715-google1"' in html
+    assert 'href="./styles.css?v=20260716-terms1"' in html
     assert 'src="./app.js?v=20260716-terms1"' in html
     assert 'fetchJson("/api/config.php")' in app_js
     assert 'fetchJson("/api/process-file.php"' in app_js
@@ -96,7 +96,7 @@ def test_submit_narrator_sample_has_working_stop_control():
 
     assert 'id="play-narrator-sample"' in page
     assert 'id="stop-narrator-sample" disabled' in page
-    assert "styles.css?v=20260715-google1" in page
+    assert "styles.css?v=20260716-terms1" in page
     assert "app.js?v=20260716-terms1" in page
     assert 'getElementById("stop-narrator-sample")' in app_js
     assert "stopNarratorSampleButton.disabled = false" in app_js
@@ -367,7 +367,7 @@ def test_sitewide_polish_is_deployed_and_respects_reduced_motion():
     for page in public_pages.values():
         assert "styles.css?v=20260715-voices4" in page
         assert "scripts/site-motion.js?v=20260715-motion2" in page
-    assert "./styles.css?v=20260715-google1" in submit
+    assert "./styles.css?v=20260716-terms1" in submit
     assert "../scripts/site-motion.js?v=20260715-motion2" in submit
     assert '"scripts/site-motion.js"' in deploy
     assert "document.body" in motion
