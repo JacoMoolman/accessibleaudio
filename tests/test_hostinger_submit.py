@@ -14,7 +14,7 @@ def test_hostinger_submit_frontend_uses_php_api_and_client_side_analysis():
     app_js = read("submit/app.js")
 
     assert 'href="./styles.css?v=20260715-google1"' in html
-    assert 'src="./app.js?v=20260716-text1"' in html
+    assert 'src="./app.js?v=20260716-paybutton1"' in html
     assert 'fetchJson("/api/config.php")' in app_js
     assert 'fetchJson("/api/process-file.php"' in app_js
     assert 'fetchJson("/api/files.php"' in app_js
@@ -97,7 +97,7 @@ def test_submit_narrator_sample_has_working_stop_control():
     assert 'id="play-narrator-sample"' in page
     assert 'id="stop-narrator-sample" disabled' in page
     assert "styles.css?v=20260715-google1" in page
-    assert "app.js?v=20260716-text1" in page
+    assert "app.js?v=20260716-paybutton1" in page
     assert 'getElementById("stop-narrator-sample")' in app_js
     assert "stopNarratorSampleButton.disabled = false" in app_js
     assert "audio.pause()" in app_js
@@ -127,23 +127,14 @@ def test_uploads_can_be_deleted_and_status_badge_stays_readable():
     assert "button.danger" in submit_styles
 
 
-def test_existing_uploads_can_recreate_server_signed_payfast_checkout():
+def test_existing_upload_rows_do_not_show_a_secondary_pay_button():
     app_js = read("submit/app.js")
-    payment_endpoint = read("api/payment.php")
-    process_file = read("api/process-file.php")
-    php_lib = read("api/lib.php")
 
-    assert 'fetchJson("/api/payment.php"' in app_js
-    assert "data-pay-upload" in app_js
-    assert "Pay now" in app_js
+    assert 'fetchJson("/api/payment.php"' not in app_js
+    assert "data-pay-upload" not in app_js
+    assert "Pay now" not in app_js
     assert "renderPaymentCheckout(data.payment)" in app_js
-    assert "current_user($config)" in payment_endpoint
-    assert "find_upload_record" in payment_endpoint
-    assert "build_payfast_checkout" in payment_endpoint
-    assert "count_words($content)" in payment_endpoint
-    assert "function find_upload_record" in php_lib
-    assert "'word_count' => $wordCount" in process_file
-    assert "'narrator_voice' => $options['narrator_voice']" in process_file
+    assert "Pay with PayFast" in app_js
 
 
 def test_upload_is_rejected_before_storage_when_payfast_is_not_configured():
