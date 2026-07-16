@@ -11,6 +11,7 @@ if ($origin && !in_array($origin, ['https://accessibleaudio.co.za', 'https://www
 }
 
 $config = hostinger_config();
+reject_large_request(16384);
 $payload = json_decode(file_get_contents('php://input'), true);
 if (!is_array($payload)) {
     $payload = $_POST;
@@ -60,6 +61,7 @@ if (
     json_error('The protected contact form is not configured.', 503);
 }
 
+enforce_rate_limit($config, 'contact', 5, 3600);
 $verification = verify_recaptcha($config['recaptcha_secret_key'], $captchaToken, $_SERVER['REMOTE_ADDR'] ?? '');
 if (empty($verification['success'])) {
     json_error('The human check failed. Complete it again.', 422);
@@ -68,8 +70,6 @@ $hostname = strtolower((string) ($verification['hostname'] ?? ''));
 if ($hostname && !in_array($hostname, ['accessibleaudio.co.za', 'www.accessibleaudio.co.za'], true)) {
     json_error('The human check was issued for another site.', 422);
 }
-
-enforce_contact_rate_limit($config['upload_dir'], $_SERVER['REMOTE_ADDR'] ?? 'unknown');
 
 $safeSubject = preg_replace('/[\r\n]+/', ' ', $subjectLine);
 $body = implode("\n", [
@@ -234,36 +234,4 @@ function verify_recaptcha(string $secret, string $token, string $remoteIp): arra
     }
     $decoded = is_string($response) ? json_decode($response, true) : null;
     return is_array($decoded) ? $decoded : ['success' => false];
-}
-
-function enforce_contact_rate_limit(string $uploadDir, string $ip): void
-{
-    $directory = rtrim($uploadDir, '/\\') . '/.contact-rate-limit';
-    if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
-        json_error('Contact protection is temporarily unavailable.', 503);
-    }
-    $path = $directory . '/' . hash('sha256', $ip) . '.json';
-    $handle = fopen($path, 'c+');
-    if (!$handle || !flock($handle, LOCK_EX)) {
-        json_error('Contact protection is temporarily unavailable.', 503);
-    }
-    $contents = stream_get_contents($handle);
-    $timestamps = json_decode($contents ?: '[]', true);
-    if (!is_array($timestamps)) {
-        $timestamps = [];
-    }
-    $cutoff = time() - 3600;
-    $timestamps = array_values(array_filter($timestamps, static fn($timestamp): bool => (int) $timestamp >= $cutoff));
-    if (count($timestamps) >= 5) {
-        flock($handle, LOCK_UN);
-        fclose($handle);
-        json_error('Too many messages were sent from this connection. Try again later.', 429);
-    }
-    $timestamps[] = time();
-    rewind($handle);
-    ftruncate($handle, 0);
-    fwrite($handle, json_encode($timestamps));
-    fflush($handle);
-    flock($handle, LOCK_UN);
-    fclose($handle);
 }

@@ -1,5 +1,7 @@
 param(
-  [string] $EnvPath = ".env.local"
+  [string] $EnvPath = ".env.local",
+  [switch] $SkipUnchangedAssets,
+  [switch] $ChangedOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -38,9 +40,10 @@ function New-FtpRequest {
   $request = [System.Net.FtpWebRequest]::Create($Uri)
   $request.Method = $Method
   $request.Credentials = [System.Net.NetworkCredential]::new($Username, $Password)
+  $request.EnableSsl = $true
   $request.UseBinary = $true
   $request.UsePassive = $true
-  $request.KeepAlive = $false
+  $request.KeepAlive = $true
   return $request
 }
 
@@ -53,6 +56,11 @@ function Ensure-FtpDirectory {
   )
 
   if ([string]::IsNullOrWhiteSpace($RelativePath)) {
+    return
+  }
+
+  $normalizedPath = ($RelativePath -replace "\\", "/").Trim("/")
+  if ($script:ensuredFtpDirectories.Contains($normalizedPath)) {
     return
   }
 
@@ -76,6 +84,7 @@ function Ensure-FtpDirectory {
       }
     }
   }
+  [void] $script:ensuredFtpDirectories.Add($normalizedPath)
 }
 
 function Send-FtpFile {
@@ -103,6 +112,38 @@ function Send-FtpFile {
   $response.Close()
 }
 
+function Remove-FtpFileIfPresent {
+  param(
+    [string] $RemoteUri,
+    [string] $Username,
+    [string] $Password
+  )
+
+  try {
+    $request = New-FtpRequest `
+      -Uri $RemoteUri `
+      -Method ([System.Net.WebRequestMethods+Ftp]::DeleteFile) `
+      -Username $Username `
+      -Password $Password
+    $response = $request.GetResponse()
+    $response.Close()
+    Write-Host "Removed retired production file: $RemoteUri"
+  } catch [System.Net.WebException] {
+    $response = $_.Exception.Response
+    if (
+      $null -ne $response `
+      -and $response.StatusCode -eq [System.Net.FtpStatusCode]::ActionNotTakenFileUnavailable
+    ) {
+      $response.Close()
+      return
+    }
+    if ($null -ne $response) {
+      $response.Close()
+    }
+    throw
+  }
+}
+
 $envValues = Read-EnvFile -Path $EnvPath
 $hostValue = $envValues["FTP_IP"]
 if ([string]::IsNullOrWhiteSpace($hostValue)) {
@@ -112,6 +153,10 @@ if ([string]::IsNullOrWhiteSpace($hostValue)) {
 $username = $envValues["FTP_USERNAME"]
 $password = $envValues["FTP_PASSWORD"]
 $remotePath = $envValues["FTP_REMOTE_PATH"]
+$tlsAllowedCertSuffix = $envValues["FTP_TLS_ALLOWED_CERT_SUFFIX"]
+if ([string]::IsNullOrWhiteSpace($tlsAllowedCertSuffix)) {
+  $tlsAllowedCertSuffix = ".hstgr.io"
+}
 
 if ([string]::IsNullOrWhiteSpace($hostValue)) {
   throw "FTP_IP or FTP_HOST must be set in $EnvPath"
@@ -124,6 +169,9 @@ if ([string]::IsNullOrWhiteSpace($password)) {
 }
 if ([string]::IsNullOrWhiteSpace($remotePath)) {
   throw "FTP_REMOTE_PATH must be set in $EnvPath"
+}
+if (-not $tlsAllowedCertSuffix.StartsWith(".")) {
+  throw "FTP_TLS_ALLOWED_CERT_SUFFIX must start with a dot"
 }
 
 if ($remotePath -eq "/") {
@@ -156,22 +204,41 @@ $files = @(
   "private_uploads/.htaccess"
 )
 
-$assetFiles = Get-ChildItem -LiteralPath "assets" -Recurse -File |
-  Where-Object { $_.Name -notlike "_ref_*" } |
-  ForEach-Object { $_.FullName.Substring((Resolve-Path -LiteralPath ".").Path.Length + 1) }
+if (-not $SkipUnchangedAssets) {
+  $assetFiles = Get-ChildItem -LiteralPath "assets" -Recurse -File |
+    Where-Object { $_.Name -notlike "_ref_*" } |
+    ForEach-Object { $_.FullName.Substring((Resolve-Path -LiteralPath ".").Path.Length + 1) }
 
-$files += $assetFiles
+  $files += $assetFiles
 
-$submitAssetFiles = Get-ChildItem -LiteralPath "submit/assets" -Recurse -File |
-  ForEach-Object { $_.FullName.Substring((Resolve-Path -LiteralPath ".").Path.Length + 1) }
+  $submitAssetFiles = Get-ChildItem -LiteralPath "submit/assets" -Recurse -File |
+    ForEach-Object { $_.FullName.Substring((Resolve-Path -LiteralPath ".").Path.Length + 1) }
 
-$files += $submitAssetFiles
+  $files += $submitAssetFiles
+}
 
 $apiFiles = Get-ChildItem -LiteralPath "api" -File -Filter "*.php" |
-  Where-Object { $_.Name -notlike "config.local*" } |
+  Where-Object { $_.Name -notlike "config.local*" -and $_.Name -ne "test-login.php" } |
   ForEach-Object { $_.FullName.Substring((Resolve-Path -LiteralPath ".").Path.Length + 1) }
 
 $files += $apiFiles
+$files += ".htaccess"
+
+$retiredProductionFiles = @(
+  "api/test-login.php"
+)
+
+if ($ChangedOnly) {
+  $changedPaths = @(
+    git diff --name-only HEAD
+    git ls-files --others --exclude-standard
+  ) | ForEach-Object { $_ -replace "\\", "/" }
+  $changedSet = [System.Collections.Generic.HashSet[string]]::new(
+    [string[]] $changedPaths,
+    [System.StringComparer]::OrdinalIgnoreCase
+  )
+  $files = $files | Where-Object { $changedSet.Contains(($_ -replace "\\", "/")) }
+}
 
 foreach ($file in $files) {
   if (-not (Test-Path -LiteralPath $file)) {
@@ -179,22 +246,56 @@ foreach ($file in $files) {
   }
 }
 
-foreach ($file in $files) {
-  $remoteRelativeDir = Split-Path -Path $file -Parent
-  Ensure-FtpDirectory `
-    -BaseUri $baseUri `
-    -RelativePath $remoteRelativeDir `
-    -Username $username `
-    -Password $password
+$script:ftpTlsAllowedCertSuffix = $tlsAllowedCertSuffix.ToLowerInvariant()
+$script:ensuredFtpDirectories = [System.Collections.Generic.HashSet[string]]::new(
+  [System.StringComparer]::OrdinalIgnoreCase
+)
+$previousCertificateCallback = [System.Net.ServicePointManager]::ServerCertificateValidationCallback
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
 
-  $remoteFile = ($file -replace "\\", "/")
-  $remoteUri = "$($baseUri.TrimEnd("/"))/$remoteFile"
-  Write-Host "Uploading $file -> $remoteUri"
-  Send-FtpFile `
-    -LocalPath $file `
-    -RemoteUri $remoteUri `
-    -Username $username `
-    -Password $password
+try {
+  [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {
+    param($sender, $certificate, $chain, $sslPolicyErrors)
+
+    if ($sslPolicyErrors -eq [System.Net.Security.SslPolicyErrors]::None) {
+      return $true
+    }
+    if ($sslPolicyErrors -ne [System.Net.Security.SslPolicyErrors]::RemoteCertificateNameMismatch) {
+      return $false
+    }
+
+    $subject = $certificate.Subject.ToLowerInvariant()
+    $escapedSuffix = [regex]::Escape($script:ftpTlsAllowedCertSuffix)
+    return $subject -match "(?:^|,\s*)cn=\*?$escapedSuffix(?:,|$)"
+  }
+
+  foreach ($file in $files) {
+    $remoteRelativeDir = Split-Path -Path $file -Parent
+    Ensure-FtpDirectory `
+      -BaseUri $baseUri `
+      -RelativePath $remoteRelativeDir `
+      -Username $username `
+      -Password $password
+
+    $remoteFile = ($file -replace "\\", "/")
+    $remoteUri = "$($baseUri.TrimEnd("/"))/$remoteFile"
+    Write-Host "Uploading over explicit FTPS: $file -> $remoteUri"
+    Send-FtpFile `
+      -LocalPath $file `
+      -RemoteUri $remoteUri `
+      -Username $username `
+      -Password $password
+  }
+
+  foreach ($remoteFile in $retiredProductionFiles) {
+    $remoteUri = "$($baseUri.TrimEnd("/"))/$remoteFile"
+    Remove-FtpFileIfPresent `
+      -RemoteUri $remoteUri `
+      -Username $username `
+      -Password $password
+  }
+} finally {
+  [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $previousCertificateCallback
 }
 
-Write-Host "Upload complete."
+Write-Host "Encrypted FTPS upload complete."

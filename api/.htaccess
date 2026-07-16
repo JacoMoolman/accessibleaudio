@@ -1,5 +1,17 @@
 SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 
+Options -Indexes
+LimitRequestBody 11534336
+
+<FilesMatch "^(?:config\.local(?:\..*)?\.php|config\.public\.php|lib\.php|smtp\.php|test-login\.php)$">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+  Header always set Cache-Control "no-store"
+  Header always set X-Robots-Tag "noindex, nofollow, noarchive"
+</IfModule>
+
 RewriteEngine On
 RewriteCond %{HTTP:Authorization} .
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

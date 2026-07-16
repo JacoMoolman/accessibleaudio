@@ -7,6 +7,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $config = hostinger_config();
+reject_large_request(65536);
+enforce_rate_limit($config, 'payfast-itn', 120, 60);
 if (!payfast_configured($config) || empty($config['admin_email'])) {
     json_error('Payment notification is not configured', 503);
 }
@@ -124,7 +126,7 @@ if (($record['admin_notification_claim'] ?? '') === $claimToken && empty($record
         'Stored as: ' . ($record['s3_key'] ?? ''),
         '',
         'Open the private admin queue to download it:',
-        request_base_url() . '/admin/',
+        request_base_url($config) . '/admin/',
     ]);
     try {
         aa_send_smtp_email($config, (string) $config['admin_email'], 'Paid audiobook: ' . ($record['filename'] ?? $uploadId), $body, $replyEmail);

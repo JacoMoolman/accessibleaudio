@@ -6,6 +6,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $config = hostinger_config();
+reject_large_request(8192);
+enforce_rate_limit($config, 'auth', 120, 60);
 $user = current_user($config);
 $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
 $uploadId = is_array($payload) ? trim((string) ($payload['upload_id'] ?? '')) : '';

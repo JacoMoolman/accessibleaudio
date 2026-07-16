@@ -6,6 +6,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $config = hostinger_config();
+reject_large_request(8192);
+enforce_rate_limit($config, 'auth', 120, 60);
 $user = current_user($config);
 if (!payfast_configured($config)) {
     json_error('Payment checkout is temporarily unavailable. Please try again later.', 503);

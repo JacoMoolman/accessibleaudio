@@ -6,6 +6,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 $config = hostinger_config();
+enforce_rate_limit($config, 'auth', 120, 60);
 $user = current_user($config);
 $uploadDir = ensure_upload_dir($config);
 

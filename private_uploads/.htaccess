@@ -1,2 +1,7 @@
 Require all denied
 Deny from all
+Options -Indexes
+
+<IfModule mod_headers.c>
+  Header always set Cache-Control "private, no-store"
+</IfModule>

@@ -7,6 +7,7 @@ return [
     'RECAPTCHA_SECRET_KEY' => null,
     'CONTACT_RECIPIENT' => null,
     'ADMIN_EMAIL' => null,
+    'PUBLIC_BASE_URL' => 'https://accessibleaudio.co.za',
     'EMAIL_SMTP_HOST' => null,
     'EMAIL_SMTP_PORT' => 465,
     'EMAIL_ADDRESS' => null,

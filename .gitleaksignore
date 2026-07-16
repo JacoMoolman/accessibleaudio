@@ -1,0 +1,3 @@
+# Intentional public Supabase anon JWT introduced in this commit. Its decoded
+# role is "anon"; keep this fingerprint narrow so any new JWT still fails.
+bf7b725e775cf951da399801661c40a941c50881:api/config.public.php:jwt:4

@@ -6,6 +6,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 $config = hostinger_config();
+enforce_rate_limit($config, 'public-config', 300, 60);
 json_response([
     'supabaseUrl' => $config['supabase_url'],
     'supabaseAnonKey' => $config['supabase_anon_key'],

@@ -6,6 +6,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $config = hostinger_config();
+reject_large_request(8192);
+enforce_rate_limit($config, 'test-login', 5, 900);
 $payload = json_decode(file_get_contents('php://input'), true) ?: [];
 $email = strtolower(trim($payload['email'] ?? ''));
 $password = $payload['password'] ?? '';

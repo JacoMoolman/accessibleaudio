@@ -6,6 +6,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $config = hostinger_config();
+reject_large_request($config['max_upload_bytes'] + 1024 * 1024);
+enforce_rate_limit($config, 'auth', 120, 60);
+enforce_rate_limit($config, 'upload', 12, 600);
 $user = current_user($config);
 if (!payfast_configured($config)) {
     json_error('Payment checkout is temporarily unavailable. No book was uploaded. Please try again later.', 503);

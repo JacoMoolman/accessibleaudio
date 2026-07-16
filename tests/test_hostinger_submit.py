@@ -233,8 +233,8 @@ def test_public_contact_form_hides_direct_address_and_requires_recaptcha():
     assert "window.grecaptcha.getResponse" in contact_js
     assert "captcha_token" in contact_js
     assert "www.google.com/recaptcha/api/siteverify" in endpoint
-    assert "enforce_contact_rate_limit" in endpoint
-    assert "count($timestamps) >= 5" in endpoint
+    assert "enforce_rate_limit($config, 'contact', 5, 3600)" in endpoint
+    assert endpoint.index("enforce_rate_limit($config, 'contact'") < endpoint.index("verify_recaptcha(")
     assert "send_contact_email" in endpoint
     assert "AUTH LOGIN" in endpoint
     assert "stream_socket_client" in endpoint
@@ -246,6 +246,87 @@ def test_public_contact_form_hides_direct_address_and_requires_recaptcha():
     assert "smtp" not in config.lower()
     assert "email_password" not in config.lower()
     assert '"scripts/contact.js"' in deploy
+
+
+def test_production_security_controls_are_fail_closed_and_deployed():
+    root_htaccess = read(".htaccess")
+    api_htaccess = read("api/.htaccess")
+    private_htaccess = read("private_uploads/.htaccess")
+    deploy = read("scripts/deploy-hostinger.ps1")
+    php_lib = read("api/lib.php")
+
+    for header in (
+        "Strict-Transport-Security",
+        "Content-Security-Policy",
+        "X-Content-Type-Options",
+        "X-Frame-Options",
+        "Referrer-Policy",
+        "Permissions-Policy",
+    ):
+        assert header in root_htaccess
+    assert "frame-ancestors 'none'" in root_htaccess
+    assert "object-src 'none'" in root_htaccess
+    assert "script-src 'self'" in root_htaccess
+    assert "script-src 'self' 'unsafe-inline'" not in root_htaccess
+    assert "Options -Indexes" in root_htaccess
+    assert "LimitRequestBody 11534336" in api_htaccess
+    for private_source in (
+        "config\\.local",
+        "config\\.public\\.php",
+        "lib\\.php",
+        "smtp\\.php",
+        "test-login\\.php",
+    ):
+        assert private_source in api_htaccess
+    assert "Require all denied" in private_htaccess
+
+    assert "$request.EnableSsl = $true" in deploy
+    assert "[switch] $SkipUnchangedAssets" in deploy
+    assert "[switch] $ChangedOnly" in deploy
+    assert "RemoteCertificateNameMismatch" in deploy
+    assert ".hstgr.io" in deploy
+    assert '".htaccess"' in deploy
+    assert '$_.Name -ne "test-login.php"' in deploy
+    assert '"api/test-login.php"' in deploy
+
+    assert "function enforce_rate_limit(" in php_lib
+    assert "$_SERVER['REMOTE_ADDR']" in php_lib
+    assert "function reject_large_request(" in php_lib
+    assert "$_SERVER['HTTP_HOST']" not in php_lib
+    assert "PUBLIC_BASE_URL" in php_lib
+
+
+def test_costly_api_work_is_rate_limited_before_external_calls():
+    endpoints = {
+        "process-file": read("api/process-file.php"),
+        "files": read("api/files.php"),
+        "payment": read("api/payment.php"),
+        "delete": read("api/delete-file.php"),
+        "admin-files": read("api/admin-files.php"),
+        "admin-download": read("api/admin-download.php"),
+    }
+    for name, endpoint in endpoints.items():
+        assert "enforce_rate_limit($config, 'auth', 120, 60)" in endpoint, name
+        assert endpoint.index("enforce_rate_limit(") < endpoint.index("current_user("), name
+
+    process_file = endpoints["process-file"]
+    assert "enforce_rate_limit($config, 'upload', 12, 600)" in process_file
+    assert "reject_large_request($config['max_upload_bytes'] + 1024 * 1024)" in process_file
+
+    payfast_notify = read("api/payfast-notify.php")
+    assert "enforce_rate_limit($config, 'payfast-itn', 120, 60)" in payfast_notify
+    assert payfast_notify.index("enforce_rate_limit(") < payfast_notify.index("payfast_server_validation(")
+
+
+def test_external_supabase_script_is_exactly_pinned_with_sri():
+    pages = [read("submit/index.html"), read("admin/index.html"), read("frontend/index.html")]
+    expected = "@supabase/supabase-js@2.110.5"
+    integrity = "sha384-Fntl9b+IRzm2GKZK0c129fQFknWsn8pyxDejLO4wwds1LF9DSob2K2QXlfw8EIXn"
+    for page in pages:
+        assert expected in page
+        assert integrity in page
+        assert 'crossorigin="anonymous"' in page
+        assert "@supabase/supabase-js@2\"" not in page
 
 
 def test_sitewide_polish_is_deployed_and_respects_reduced_motion():

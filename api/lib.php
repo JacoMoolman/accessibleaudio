@@ -62,6 +62,7 @@ function hostinger_config(): array
         'contact_smtp_username' => config_value($fileConfig, 'EMAIL_ADDRESS', null),
         'contact_smtp_password' => config_value($fileConfig, 'EMAIL_PASSWORD', null),
         'admin_email' => config_value($fileConfig, 'ADMIN_EMAIL', null),
+        'public_base_url' => config_value($fileConfig, 'PUBLIC_BASE_URL', 'https://accessibleaudio.co.za'),
         'max_upload_bytes' => (int) config_value($fileConfig, 'MAX_UPLOAD_BYTES', 10 * 1024 * 1024),
         'upload_dir' => config_value($fileConfig, 'UPLOAD_DIR', dirname(__DIR__) . '/private_uploads'),
         'payfast_merchant_id' => config_value($fileConfig, 'PAYFAST_MERCHANT_ID', null),
@@ -159,6 +160,60 @@ function require_admin(array $config, array $user): void
     if ($adminEmail === '' || $userEmail === '' || !hash_equals($adminEmail, $userEmail)) {
         json_error('Admin access is restricted to the configured Google account', 403);
     }
+}
+
+function reject_large_request(int $maxBytes): void
+{
+    $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+    if ($contentLength > $maxBytes) {
+        json_error('Request body is too large', 413);
+    }
+}
+
+function enforce_rate_limit(array $config, string $bucket, int $limit, int $windowSeconds): void
+{
+    $bucket = preg_replace('/[^a-z0-9_-]+/i', '-', $bucket) ?: 'request';
+    $ip = trim((string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown')) ?: 'unknown';
+    $directory = rtrim((string) $config['upload_dir'], '/\\') . '/.rate-limit/' . $bucket;
+    if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
+        json_error('Request protection is temporarily unavailable', 503);
+    }
+
+    $path = $directory . '/' . hash('sha256', $ip) . '.json';
+    $handle = fopen($path, 'c+');
+    if (!$handle || !flock($handle, LOCK_EX)) {
+        if (is_resource($handle)) {
+            fclose($handle);
+        }
+        json_error('Request protection is temporarily unavailable', 503);
+    }
+
+    $now = time();
+    $timestamps = json_decode(stream_get_contents($handle) ?: '[]', true);
+    if (!is_array($timestamps)) {
+        $timestamps = [];
+    }
+    $cutoff = $now - $windowSeconds;
+    $timestamps = array_values(array_filter(
+        $timestamps,
+        static fn($timestamp): bool => is_numeric($timestamp) && (int) $timestamp >= $cutoff,
+    ));
+    if (count($timestamps) >= $limit) {
+        $oldest = (int) min($timestamps);
+        $retryAfter = max(1, $windowSeconds - ($now - $oldest));
+        flock($handle, LOCK_UN);
+        fclose($handle);
+        header('Retry-After: ' . $retryAfter);
+        json_error('Too many requests. Try again later.', 429);
+    }
+
+    $timestamps[] = $now;
+    rewind($handle);
+    ftruncate($handle, 0);
+    fwrite($handle, json_encode($timestamps));
+    fflush($handle);
+    flock($handle, LOCK_UN);
+    fclose($handle);
 }
 
 function issue_test_token(string $secret): string
@@ -358,7 +413,7 @@ function build_payfast_checkout(array $config, array $user, array $record, int $
     if (!payfast_configured($config)) {
         return null;
     }
-    $baseUrl = request_base_url();
+    $baseUrl = request_base_url($config);
     $amountCents = total_cost_cents($wordCount, $options['narrator_voice'], $options['also_wav'], $options['translate'], $options['make_video']);
     $fields = [
         'merchant_id' => $config['payfast_merchant_id'],
@@ -402,10 +457,16 @@ function payfast_signature(array $fields, string $passphrase): string
     return md5(implode('&', $parts));
 }
 
-function request_base_url(): string
+function request_base_url(array $config): string
 {
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    return $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'accessibleaudio.co.za');
+    $baseUrl = rtrim(trim((string) ($config['public_base_url'] ?? '')), '/');
+    if (
+        filter_var($baseUrl, FILTER_VALIDATE_URL)
+        && strtolower((string) parse_url($baseUrl, PHP_URL_SCHEME)) === 'https'
+    ) {
+        return $baseUrl;
+    }
+    return 'https://accessibleaudio.co.za';
 }
 
 function append_record(string $uploadDir, array $record): void
