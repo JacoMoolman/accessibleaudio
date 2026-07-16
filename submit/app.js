@@ -12,8 +12,6 @@ const logoutButton = document.getElementById("logout-button");
 const uploadForm = document.getElementById("upload-form");
 const fileInput = document.getElementById("book-file");
 const refreshFilesButton = document.getElementById("refresh-files");
-const translateCheckbox = document.getElementById("translate");
-const translationOptions = document.getElementById("translation-options");
 const productionOptions = document.getElementById("production-options");
 const analysisResult = document.getElementById("analysis-result");
 const chapterList = document.getElementById("chapter-list");
@@ -36,8 +34,6 @@ const VOICE_SAMPLE_URLS = Object.fromEntries(
 );
 const OPTION_COSTS_CENTS = {
   also_wav: 2500,
-  translate: 5000,
-  make_video: 10000,
 };
 let fileAnalysis = null;
 let currentVoiceSampleAudio = null;
@@ -112,17 +108,7 @@ logoutButton.addEventListener("click", async () => {
   setStatus("Logged out.");
 });
 
-translateCheckbox.addEventListener("change", () => {
-  translationOptions.hidden = !translateCheckbox.checked;
-  updateCostEstimate();
-  renderPaymentCheckout(null);
-});
-
 document.getElementById("also-wav").addEventListener("change", () => {
-  updateCostEstimate();
-  renderPaymentCheckout(null);
-});
-document.getElementById("make-video").addEventListener("change", () => {
   updateCostEstimate();
   renderPaymentCheckout(null);
 });
@@ -169,12 +155,12 @@ uploadForm.addEventListener("submit", async (event) => {
   formData.append("narrator_voice", document.getElementById("narrator-voice").value);
   formData.append("output_format", "mp3");
   formData.append("also_wav", document.getElementById("also-wav").checked ? "true" : "false");
-  formData.append("translate", translateCheckbox.checked ? "true" : "false");
-  formData.append("translation_languages", selectedTranslationLanguages().join(","));
-  formData.append("translation_voices", JSON.stringify(selectedTranslationVoices()));
+  formData.append("translate", "false");
+  formData.append("translation_languages", "");
+  formData.append("translation_voices", "{}");
   formData.append("source_language", fileAnalysis.source_language || "");
   formData.append("chapter_titles", JSON.stringify(fileAnalysis.chapters.map((chapter) => chapter.title)));
-  formData.append("make_video", document.getElementById("make-video").checked ? "true" : "false");
+  formData.append("make_video", "false");
 
   setStatus("Uploading...");
   try {
@@ -191,7 +177,6 @@ uploadForm.addEventListener("submit", async (event) => {
     renderAnalysisResult();
     renderCostEstimate();
     setProductionOptionsEnabled(Boolean(fileAnalysis));
-    translationOptions.hidden = true;
     setStatus(
       paymentPanel.hidden
         ? "Uploaded. Status is saved as uploaded for manual processing."
@@ -274,22 +259,6 @@ payfastForm.addEventListener("submit", (event) => {
   event.preventDefault();
   payfastForm.submit();
 });
-
-function selectedTranslationLanguages() {
-  return Array.from(
-    document.querySelectorAll("[name='translation-language']:checked")
-  ).map((input) => input.value);
-}
-
-function selectedTranslationVoices() {
-  return selectedTranslationLanguages().reduce((voices, language) => {
-    const select = document.querySelector(`[name="translation-voice-${cssEscape(language)}"]`);
-    if (select?.value) {
-      voices[language] = select.value;
-    }
-    return voices;
-  }, {});
-}
 
 async function analyzeSelectedFile() {
   fileAnalysis = null;
@@ -480,12 +449,6 @@ function updateCostEstimate() {
   ];
   if (document.getElementById("also-wav").checked) {
     rows.push({ label: "WAV output", cents: OPTION_COSTS_CENTS.also_wav });
-  }
-  if (translateCheckbox.checked) {
-    rows.push({ label: "Translation request", cents: OPTION_COSTS_CENTS.translate });
-  }
-  if (document.getElementById("make-video").checked) {
-    rows.push({ label: "Video request", cents: OPTION_COSTS_CENTS.make_video });
   }
   const totalCents = rows.reduce((sum, row) => sum + row.cents, 0);
   costEstimateTotal.textContent = formatZarFromCents(totalCents);

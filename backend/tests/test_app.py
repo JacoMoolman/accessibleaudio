@@ -364,17 +364,16 @@ def test_submit_page_requires_file_analysis_before_options():
     assert 'disabled data-requires-analysis' in response.text
 
 
-def test_submit_page_has_voice_sample_and_translation_voice_controls():
+def test_submit_page_has_voice_sample_without_translation_or_video_controls():
     client, _, _ = make_client()
 
     response = client.get("/submit")
 
     assert response.status_code == 200
     assert 'id="play-narrator-sample"' in response.text
-    assert 'id="translation-voice-options"' in response.text
-    assert 'name="translation-voice-Afrikaans"' in response.text
-    assert 'name="translation-voice-Zulu"' in response.text
-    assert 'name="translation-voice-English"' in response.text
+    assert 'id="translate"' not in response.text
+    assert 'name="translation-language"' not in response.text
+    assert 'id="make-video"' not in response.text
 
 
 def test_submit_page_describes_audiobook_ready_txt_without_storage_detail():
@@ -397,7 +396,8 @@ def test_frontend_analyzes_file_before_unlocking_options():
     assert "analyzeSelectedFile" in response.text
     assert "setProductionOptionsEnabled(Boolean(fileAnalysis))" in response.text
     assert "playVoiceSample" in response.text
-    assert "selectedTranslationVoices" in response.text
+    assert 'formData.append("translate", "false")' in response.text
+    assert 'formData.append("make_video", "false")' in response.text
 
 
 def test_frontend_uses_real_voice_sample_audio_files():
@@ -450,8 +450,8 @@ def test_frontend_displays_analysis_cost_estimate():
     assert "renderCostEstimate" in response.text
     assert "OPTION_COSTS_CENTS" in response.text
     assert "also_wav: 2500" in response.text
-    assert "translate: 5000" in response.text
-    assert "make_video: 10000" in response.text
+    assert "translate: 5000" not in response.text
+    assert "make_video: 10000" not in response.text
     assert "updateCostEstimate" in response.text
 
 
