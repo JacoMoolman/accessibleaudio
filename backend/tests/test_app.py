@@ -123,6 +123,8 @@ def expected_payfast_signature(payload, passphrase="test-passphrase"):
         if value not in (None, ""):
             parts.append(f"{key}={quote_plus(str(value).strip())}")
     parts.append(f"passphrase={quote_plus(passphrase.strip())}")
+    # Mirror PayFast's required MD5 interoperability checksum in test code.
+    # codeql[py/weak-sensitive-data-hashing]
     return md5("&".join(parts).encode(), usedforsecurity=False).hexdigest()
 
 

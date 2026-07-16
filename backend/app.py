@@ -548,6 +548,9 @@ def _generate_payfast_signature(fields: dict[str, Any], passphrase: str) -> str:
         if value not in (None, ""):
             parts.append(f"{key}={quote_plus(str(value).strip())}")
     parts.append(f"passphrase={quote_plus(passphrase.strip())}")
+    # PayFast requires MD5 for its interoperability checksum; this is not
+    # password hashing or a local security boundary.
+    # codeql[py/weak-sensitive-data-hashing]
     return md5("&".join(parts).encode(), usedforsecurity=False).hexdigest()
 
 
