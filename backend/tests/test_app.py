@@ -382,8 +382,10 @@ def test_submit_page_describes_audiobook_ready_txt_without_storage_detail():
     response = client.get("/submit")
 
     assert response.status_code == 200
-    assert "Upload an audiobook-ready TXT file." in response.text
-    assert "Everything in the TXT file" in response.text
+    assert "Upload an audiobook-ready text file." in response.text
+    assert "Everything in the text file" in response.text
+    assert "TXT" not in response.text
+    assert "voice sample page" not in response.text
     assert "Files are stored in S3 under your user folder." not in response.text
 
 

@@ -211,7 +211,7 @@ async function analyzeSelectedFile() {
 
 function renderAnalysisResult(message = "", isError = false) {
   if (!fileAnalysis) {
-    analysisResult.textContent = message || "Choose a TXT file to detect the source language and chapters.";
+    analysisResult.textContent = message || "Choose a text file to detect the source language and chapters.";
     analysisResult.classList.toggle("error", isError);
     chapterList.innerHTML = "";
     renderCostEstimate();

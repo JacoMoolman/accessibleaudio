@@ -14,7 +14,7 @@ def test_hostinger_submit_frontend_uses_php_api_and_client_side_analysis():
     app_js = read("submit/app.js")
 
     assert 'href="./styles.css?v=20260715-google1"' in html
-    assert 'src="./app.js?v=20260716-options1"' in html
+    assert 'src="./app.js?v=20260716-text1"' in html
     assert 'fetchJson("/api/config.php")' in app_js
     assert 'fetchJson("/api/process-file.php"' in app_js
     assert 'fetchJson("/api/files.php"' in app_js
@@ -67,6 +67,17 @@ def test_user_facing_copy_does_not_require_utf8():
         assert "must be UTF-8 text" not in content
 
 
+def test_submit_uses_text_wording_and_omits_redundant_voice_page_link():
+    for path in ("submit/index.html", "frontend/index.html"):
+        page = read(path)
+        assert "TXT" not in page
+        assert "Upload an audiobook-ready text file." in page
+        assert "voice sample page" not in page
+
+    for path in ("submit/app.js", "frontend/app.js"):
+        assert "TXT" not in read(path)
+
+
 def test_voice_sample_controls_use_the_dark_site_palette():
     html = read("voice-samples.html")
     styles = read("styles.css")
@@ -86,7 +97,7 @@ def test_submit_narrator_sample_has_working_stop_control():
     assert 'id="play-narrator-sample"' in page
     assert 'id="stop-narrator-sample" disabled' in page
     assert "styles.css?v=20260715-google1" in page
-    assert "app.js?v=20260716-options1" in page
+    assert "app.js?v=20260716-text1" in page
     assert 'getElementById("stop-narrator-sample")' in app_js
     assert "stopNarratorSampleButton.disabled = false" in app_js
     assert "audio.pause()" in app_js
@@ -184,7 +195,7 @@ def test_numbered_voice_catalog_is_grouped_and_priced_without_naming_vendors():
     assert "0.75c" in page
     assert "voice-provider-button" not in page
     assert "../scripts/voice-catalog.js?v=20260715-voices4" in submit_html
-    assert "The numbers match the" in submit_html
+    assert "The numbers match the" not in submit_html
     assert "Local: 0.5c/word." in submit_html
     assert "Cloud: 0.75c/word." in submit_html
     assert 'href="https://accessibleaudio.co.za/voice-samples.html">Voice samples</a>' in submit_html
