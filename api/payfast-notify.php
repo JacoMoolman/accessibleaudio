@@ -186,7 +186,7 @@ function payfast_notification_signature(array $payload, string $passphrase): str
     $parts = [];
     foreach ($payload as $key => $value) {
         if ($key === 'signature') {
-            break;
+            continue;
         }
         if ($value !== '') {
             $parts[] = $key . '=' . urlencode(trim((string) $value));
