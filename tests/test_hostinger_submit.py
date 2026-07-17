@@ -445,6 +445,7 @@ def test_paid_payfast_notifications_are_verified_and_idempotent():
     process_file = read("api/process-file.php")
 
     assert "payfast_notification_signature" in endpoint
+    assert "!payfast_uses_unsigned_shared_sandbox($config)" in endpoint
     assert "if ($key === 'signature')" in endpoint
     assert "continue;" in endpoint[endpoint.index("function payfast_notification_signature"):]
     assert "payfast_server_validation" in endpoint

@@ -28,7 +28,10 @@ if (!hash_equals((string) $config['payfast_merchant_id'], (string) ($payload['me
     payfast_itn_audit($config, 'merchant_mismatch', $payload);
     json_error('PayFast merchant does not match', 400);
 }
-if (!hash_equals(strtolower(payfast_notification_signature($payload, (string) $config['payfast_passphrase'])), strtolower($payload['signature']))) {
+if (
+    !payfast_uses_unsigned_shared_sandbox($config)
+    && !hash_equals(strtolower(payfast_notification_signature($payload, (string) $config['payfast_passphrase'])), strtolower($payload['signature']))
+) {
     payfast_itn_audit($config, 'signature_mismatch', $payload);
     json_error('Invalid PayFast signature', 400);
 }
