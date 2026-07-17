@@ -19,8 +19,9 @@ $previousCertificateCallback = [System.Net.ServicePointManager]::ServerCertifica
   param($sender, $certificate, $chain, $sslPolicyErrors)
   if ($sslPolicyErrors -eq [System.Net.Security.SslPolicyErrors]::None) { return $true }
   if ($sslPolicyErrors -ne [System.Net.Security.SslPolicyErrors]::RemoteCertificateNameMismatch) { return $false }
-  $dnsName = $certificate.GetNameInfo([System.Security.Cryptography.X509Certificates.X509NameType]::DnsName, $false)
-  return $dnsName.ToLowerInvariant().EndsWith($script:privateConfigTlsSuffix)
+  $subject = $certificate.Subject.ToLowerInvariant()
+  $escapedSuffix = [regex]::Escape($script:privateConfigTlsSuffix)
+  return $subject -match "(?:^|,\s*)cn=\*?$escapedSuffix(?:,|$)"
 }
 $request = [System.Net.FtpWebRequest]::Create("ftp://$hostValue/api/config.local.php")
 $request.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
