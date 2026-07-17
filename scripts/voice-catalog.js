@@ -16,6 +16,7 @@
         typeLabel: type === "local" ? "Local voices" : "Cloud voices",
         costPerWordCents:
           type === "local" ? localCostPerWordCents : cloudCostPerWordCents,
+        availableForProduction: number >= 6 && number <= 10,
         sampleUrl: `/assets/voice-samples/catalog/voice-${padded}.${extension}`,
       });
     })

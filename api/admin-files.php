@@ -30,7 +30,18 @@ $records = array_map(static function (array $record): array {
         'translate' => (bool) ($record['translate'] ?? false),
         'make_video' => (bool) ($record['make_video'] ?? false),
         'download_url' => '/api/admin-download.php?id=' . rawurlencode((string) ($record['id'] ?? '')),
+        'outputs' => array_map(static function (array $output) use ($record): array {
+            $chapter = (int) ($output['chapter'] ?? 0);
+            return [
+                'chapter' => $chapter,
+                'title' => $output['title'] ?? ('Chapter ' . $chapter),
+                'filename' => $output['filename'] ?? ('chapter-' . $chapter . '.mp3'),
+                'bytes' => $output['bytes'] ?? 0,
+                'download_url' => '/api/download-audio.php?id=' . rawurlencode((string) ($record['id'] ?? '')) . '&chapter=' . $chapter,
+            ];
+        }, is_array($record['outputs'] ?? null) ? $record['outputs'] : []),
+        'production_error' => $record['production_error'] ?? null,
     ];
-}, list_paid_records($uploadDir));
+}, list_production_records($uploadDir));
 
 json_response($records);

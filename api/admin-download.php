@@ -15,8 +15,8 @@ if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0
 }
 $uploadDir = ensure_upload_dir($config);
 $record = find_upload_record_any($uploadDir, $uploadId);
-if ($record === null || ($record['status'] ?? '') !== 'paid') {
-    json_error('Paid upload not found', 404);
+if ($record === null || !in_array(($record['status'] ?? ''), ['paid', 'queued', 'processing', 'completed', 'failed'], true)) {
+    json_error('Production upload not found', 404);
 }
 $filename = safe_filename((string) ($record['filename'] ?? 'upload.txt'));
 $path = rtrim($uploadDir, '/\\')

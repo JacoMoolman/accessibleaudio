@@ -3,7 +3,7 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 Options -Indexes
 LimitRequestBody 11534336
 
-<FilesMatch "^(?:config\.local(?:\..*)?\.php|config\.public\.php|lib\.php|smtp\.php|test-login\.php)$">
+<FilesMatch "^(?:config\.local(?:\..*)?\.php|config\.public\.php|lib\.php|production\.php|process-queue\.php|smtp\.php|test-login\.php)$">
   Require all denied
 </FilesMatch>
 

@@ -17,4 +17,9 @@ return [
     'PAYFAST_MERCHANT_KEY' => null,
     'PAYFAST_PASSPHRASE' => null,
     'PAYFAST_SANDBOX' => true,
+    'OPENROUTER_API_KEY' => null,
+    'OPENROUTER_TTS_MODEL' => 'x-ai/grok-voice-tts-1.0',
+    'TTS_CHUNK_CHARACTERS' => 4500,
+    'TTS_REQUEST_TIMEOUT' => 300,
+    'WORKER_CHUNKS_PER_RUN' => 1,
 ];

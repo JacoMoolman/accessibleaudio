@@ -6,7 +6,7 @@
     <meta name="robots" content="noindex,nofollow,noarchive">
     <title>Production Queue | Accessible Audio</title>
     <link rel="icon" href="../favicon.svg?v=20260612-private" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles.css?v=20260715-admin1">
+    <link rel="stylesheet" href="./styles.css?v=20260717-production1">
   </head>
   <body>
     <header class="admin-header">
@@ -23,10 +23,10 @@
     <main>
       <section class="hero" aria-labelledby="page-title">
         <div>
-          <p class="eyebrow">Paid production desk</p>
-          <h1 id="page-title">Books ready<br>to become audio.</h1>
+          <p class="eyebrow">Automated production desk</p>
+          <h1 id="page-title">Audiobook<br>production status.</h1>
         </div>
-        <p class="hero-note">A private queue for verified PayFast orders. Only the configured Google administrator can view or download manuscripts.</p>
+        <p class="hero-note">A private queue for verified PayFast orders, processing progress and finished MP3 chapters.</p>
       </section>
 
       <section class="auth-card" id="auth-card" aria-labelledby="auth-title">
@@ -69,7 +69,7 @@
     <template id="job-template">
       <article class="job-card">
         <div class="job-main">
-          <span class="paid-chip">Paid</span>
+          <span class="paid-chip" data-field="status"></span>
           <h3 data-field="filename"></h3>
           <p class="job-meta"><span data-field="payer"></span> · <span data-field="paid_at"></span></p>
         </div>
@@ -81,11 +81,13 @@
           <div><dt>Production</dt><dd data-field="production"></dd></div>
           <div><dt>Storage</dt><dd data-field="storage_key"></dd></div>
         </dl>
-        <button class="download-button" type="button" data-download>Download manuscript</button>
+        <div class="download-list" data-field="downloads">
+          <button class="download-button" type="button" data-download>Download manuscript</button>
+        </div>
       </article>
     </template>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.5" integrity="sha384-Fntl9b+IRzm2GKZK0c129fQFknWsn8pyxDejLO4wwds1LF9DSob2K2QXlfw8EIXn" crossorigin="anonymous"></script>
-    <script src="./app.js?v=20260715-admin1"></script>
+    <script src="./app.js?v=20260717-production1"></script>
   </body>
 </html>

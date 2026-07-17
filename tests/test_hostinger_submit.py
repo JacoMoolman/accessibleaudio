@@ -13,8 +13,8 @@ def test_hostinger_submit_frontend_uses_php_api_and_client_side_analysis():
     html = read("submit/index.html")
     app_js = read("submit/app.js")
 
-    assert 'href="./styles.css?v=20260716-terms1"' in html
-    assert 'src="./app.js?v=20260716-terms1"' in html
+    assert 'href="./styles.css?v=20260717-production1"' in html
+    assert 'src="./app.js?v=20260717-production1"' in html
     assert 'fetchJson("/api/config.php")' in app_js
     assert 'fetchJson("/api/process-file.php"' in app_js
     assert 'fetchJson("/api/files.php"' in app_js
@@ -96,8 +96,8 @@ def test_submit_narrator_sample_has_working_stop_control():
 
     assert 'id="play-narrator-sample"' in page
     assert 'id="stop-narrator-sample" disabled' in page
-    assert "styles.css?v=20260716-terms1" in page
-    assert "app.js?v=20260716-terms1" in page
+    assert "styles.css?v=20260717-production1" in page
+    assert "app.js?v=20260717-production1" in page
     assert 'getElementById("stop-narrator-sample")' in app_js
     assert "stopNarratorSampleButton.disabled = false" in app_js
     assert "audio.pause()" in app_js
@@ -202,16 +202,17 @@ def test_numbered_voice_catalog_is_grouped_and_priced_without_naming_vendors():
     assert "0.5c" in page
     assert "0.75c" in page
     assert "voice-provider-button" not in page
-    assert "../scripts/voice-catalog.js?v=20260715-voices4" in submit_html
+    assert "../scripts/voice-catalog.js?v=20260717-production1" in submit_html
     assert "The numbers match the" not in submit_html
-    assert "Local: 0.5c/word." in submit_html
-    assert "Cloud: 0.75c/word." in submit_html
+    assert "Automated Grok voices: 0.75c/word." in submit_html
     assert 'href="https://accessibleaudio.co.za/voice-samples.html">Voice samples</a>' in submit_html
     assert "VOICE_CATALOG.map" in submit_js
     assert "populateNarratorVoices" in submit_js
     assert 'document.createElement("optgroup")' in submit_js
     assert '["local", "cloud"]' in submit_js
     assert "selectedVoice.costPerWordCents" in submit_js
+    assert "voice.availableForProduction" in submit_js
+    assert "availableForProduction: number >= 6 && number <= 10" in catalog_js
     assert "LOCAL_COST_PER_WORD_CENTS = 0.5" in php_lib
     assert "CLOUD_COST_PER_WORD_CENTS = LOCAL_COST_PER_WORD_CENTS * 1.5" in php_lib
     assert "narrator_voice_pricing" in php_lib
@@ -367,7 +368,7 @@ def test_sitewide_polish_is_deployed_and_respects_reduced_motion():
     for page in public_pages.values():
         assert "styles.css?v=20260715-voices4" in page
         assert "scripts/site-motion.js?v=20260715-motion2" in page
-    assert "./styles.css?v=20260716-terms1" in submit
+    assert "./styles.css?v=20260717-production1" in submit
     assert "../scripts/site-motion.js?v=20260715-motion2" in submit
     assert '"scripts/site-motion.js"' in deploy
     assert "document.body" in motion
@@ -444,6 +445,33 @@ def test_paid_payfast_notifications_are_verified_and_idempotent():
     assert "function update_upload_record" in php_lib
     assert "function find_upload_record_any" in php_lib
     assert "'user_email' => strtolower" in process_file
+    assert "$record['status'] = 'queued'" in endpoint
+    assert "['uploaded', 'paid']" in endpoint
+
+
+def test_paid_orders_are_processed_server_side_into_downloadable_mp3_chapters():
+    production = read("api/production.php")
+    worker = read("api/process-queue.php")
+    download = read("api/download-audio.php")
+    user_files = read("api/files.php")
+    user_app = read("submit/app.js")
+    admin_files = read("api/admin-files.php")
+
+    assert "PHP_SAPI !== 'cli'" in worker
+    assert "run_production_worker" in worker
+    assert "split_book_into_chapters" in production
+    assert "chunk_speech_text" in production
+    assert "generate_tts_chunk" in production
+    assert "x-ai/grok-voice-tts-1.0" in read("api/lib.php")
+    assert "join_mp3_chunks" in production
+    assert "mp3_frame_info" in production
+    assert "response_format' => 'mp3'" in production
+    assert "completion_email_sent_at" in production
+    assert "Content-Type: audio/mpeg" in download
+    assert "current_user($config)" in download
+    assert "download_url" in user_files
+    assert "data-download-audio" in user_app
+    assert "outputs" in admin_files
 
 
 def test_private_admin_queue_requires_configured_google_admin_and_secure_download():
@@ -464,7 +492,7 @@ def test_private_admin_queue_requires_configured_google_admin_and_secure_downloa
     assert "Authorization: `Bearer ${currentSession.access_token}`" in app_js
     assert "response.blob()" in app_js
     assert "require_admin($config, $user)" in endpoint
-    assert "list_paid_records" in endpoint
+    assert "list_production_records" in endpoint
     assert "require_admin($config, $user)" in download
     assert "find_upload_record_any" in download
     assert "Content-Disposition: attachment" in download

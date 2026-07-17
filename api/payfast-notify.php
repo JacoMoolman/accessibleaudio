@@ -89,7 +89,9 @@ if (abs($amountGross - ($expectedCents / 100)) > 0.01) {
 $claimToken = bin2hex(random_bytes(16));
 $now = gmdate('c');
 $record = update_upload_record($uploadDir, $uploadId, static function (array $record) use ($payload, $amountGross, $claimToken, $now): array {
-    $record['status'] = 'paid';
+    if (in_array(($record['status'] ?? ''), ['uploaded', 'paid'], true)) {
+        $record['status'] = 'queued';
+    }
     $record['paid_at'] = $record['paid_at'] ?? $now;
     $record['payfast_payment_id'] = (string) ($payload['pf_payment_id'] ?? '');
     $record['merchant_payment_id'] = (string) ($payload['m_payment_id'] ?? '');
@@ -114,7 +116,7 @@ if ($record === null) {
 if (($record['admin_notification_claim'] ?? '') === $claimToken && empty($record['admin_notified_at'])) {
     $replyEmail = (string) ($record['payer_email'] ?: ($record['user_email'] ?? ''));
     $body = implode("\n", [
-        'A paid audiobook order is ready.',
+        'A paid audiobook order has been queued for automatic production.',
         '',
         'Book: ' . ($record['filename'] ?? 'Unknown'),
         'Upload ID: ' . $uploadId,

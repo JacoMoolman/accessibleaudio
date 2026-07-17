@@ -13,6 +13,9 @@ $user = current_user($config);
 if (!payfast_configured($config)) {
     json_error('Payment checkout is temporarily unavailable. No book was uploaded. Please try again later.', 503);
 }
+if (!production_configured($config)) {
+    json_error('Audiobook production is temporarily unavailable. No book was uploaded. Please try again later.', 503);
+}
 $termsVersion = '2026-07-16';
 if (!bool_value('terms_accepted') || !hash_equals($termsVersion, trim((string) ($_POST['terms_version'] ?? '')))) {
     json_error('You must agree to the current Terms and Conditions before uploading.', 400);
@@ -22,6 +25,9 @@ $narratorVoice = trim($_POST['narrator_voice'] ?? '');
 $voicePricing = narrator_voice_pricing($narratorVoice);
 if ($voicePricing === null) {
     json_error('Choose a valid narrator voice', 400);
+}
+if (production_voice_config($narratorVoice) === null) {
+    json_error('Choose a cloud narrator voice for automated production', 400);
 }
 $uploadDir = ensure_upload_dir($config);
 

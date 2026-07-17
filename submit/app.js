@@ -44,7 +44,9 @@ init();
 function populateNarratorVoices() {
   const select = document.getElementById("narrator-voice");
   ["local", "cloud"].forEach((type) => {
-    const voices = VOICE_CATALOG.filter((voice) => voice.type === type);
+    const voices = VOICE_CATALOG.filter(
+      (voice) => voice.type === type && voice.availableForProduction
+    );
     if (!voices.length) return;
     const group = document.createElement("optgroup");
     const rate = voices[0].costPerWordCents;
@@ -108,10 +110,6 @@ logoutButton.addEventListener("click", async () => {
   setStatus("Logged out.");
 });
 
-document.getElementById("also-wav").addEventListener("change", () => {
-  updateCostEstimate();
-  renderPaymentCheckout(null);
-});
 document.getElementById("narrator-voice").addEventListener("change", () => {
   stopVoiceSample();
   updateCostEstimate();
@@ -154,7 +152,7 @@ uploadForm.addEventListener("submit", async (event) => {
   formData.append("file", file);
   formData.append("narrator_voice", document.getElementById("narrator-voice").value);
   formData.append("output_format", "mp3");
-  formData.append("also_wav", document.getElementById("also-wav").checked ? "true" : "false");
+  formData.append("also_wav", "false");
   formData.append("translate", "false");
   formData.append("translation_languages", "");
   formData.append("translation_voices", "{}");
@@ -193,6 +191,15 @@ uploadForm.addEventListener("submit", async (event) => {
 refreshFilesButton.addEventListener("click", loadFiles);
 
 filesList.addEventListener("click", async (event) => {
+  const downloadButton = event.target.closest("[data-download-audio]");
+  if (downloadButton && currentSession?.access_token) {
+    await downloadAuthenticatedFile(
+      downloadButton.dataset.downloadAudio,
+      downloadButton.dataset.filename || "chapter.mp3",
+      downloadButton
+    );
+    return;
+  }
   const deleteButton = event.target.closest("[data-delete-upload]");
   if (!deleteButton || !currentSession?.access_token) {
     return;
@@ -404,10 +411,9 @@ function updateCostEstimate() {
   const wordCount = Number(fileAnalysis.word_count || 0);
   const selectedVoice = VOICES_BY_LABEL[document.getElementById("narrator-voice").value];
   if (!selectedVoice) {
-    const localVoice = VOICE_CATALOG.find((voice) => voice.type === "local");
-    const cloudVoice = VOICE_CATALOG.find((voice) => voice.type === "cloud");
+    const availableVoice = VOICE_CATALOG.find((voice) => voice.availableForProduction);
     costEstimateTotal.textContent = "Select a voice";
-    costEstimateBreakdown.innerHTML = [localVoice, cloudVoice]
+    costEstimateBreakdown.innerHTML = [availableVoice]
       .filter(Boolean)
       .map((voice) => {
         const cents = wordCount * voice.costPerWordCents;
@@ -423,9 +429,6 @@ function updateCostEstimate() {
       cents: baseCents,
     },
   ];
-  if (document.getElementById("also-wav").checked) {
-    rows.push({ label: "WAV output", cents: OPTION_COSTS_CENTS.also_wav });
-  }
   const totalCents = rows.reduce((sum, row) => sum + row.cents, 0);
   costEstimateTotal.textContent = formatZarFromCents(totalCents);
   costEstimateBreakdown.innerHTML = rows
@@ -555,6 +558,15 @@ async function loadFiles() {
 
 function renderFile(file) {
   const created = file.created_at ? new Date(file.created_at).toLocaleString() : "";
+  const outputs = Array.isArray(file.outputs) ? file.outputs : [];
+  const downloads = outputs.length
+    ? `<div class="chapter-downloads">${outputs.map((output) => `
+        <button
+          type="button"
+          data-download-audio="${escapeHtml(output.download_url)}"
+          data-filename="${escapeHtml(output.filename)}"
+        >Download ${escapeHtml(output.title)} MP3</button>`).join("")}</div>`
+    : "";
   return `
     <article class="file-row">
       <div>
@@ -571,8 +583,37 @@ function renderFile(file) {
           aria-label="Delete ${escapeHtml(file.filename)}"
         >Delete book</button>
       </div>
+      ${downloads}
     </article>
   `;
+}
+
+async function downloadAuthenticatedFile(url, filename, button) {
+  button.disabled = true;
+  setStatus(`Preparing ${filename}...`);
+  try {
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${currentSession.access_token}` },
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.detail || `Download failed (${response.status})`);
+    }
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = filename;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(objectUrl);
+    setStatus(`${filename} download started.`);
+  } catch (error) {
+    setStatus(error.message, true);
+  } finally {
+    button.disabled = false;
+  }
 }
 
 async function fetchJson(url, options = {}) {

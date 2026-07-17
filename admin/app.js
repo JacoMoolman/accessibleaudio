@@ -98,7 +98,7 @@ async function setSession(session) {
 async function loadJobs() {
   if (!currentSession?.access_token) return;
   refreshButton.disabled = true;
-  setStatus("Loading verified payments...");
+  setStatus("Loading audiobook production jobs...");
   try {
     jobs = await fetchJson("/api/admin-files.php", {
       headers: { Authorization: `Bearer ${currentSession.access_token}` },
@@ -106,7 +106,7 @@ async function loadJobs() {
     queue.hidden = false;
     renderSummary();
     renderJobs();
-    setStatus(jobs.length ? `${jobs.length} paid ${jobs.length === 1 ? "book" : "books"} ready.` : "No paid books are waiting.");
+    setStatus(jobs.length ? `${jobs.length} production ${jobs.length === 1 ? "job" : "jobs"}.` : "No audiobook jobs yet.");
   } catch (error) {
     authCard.hidden = false;
     authState.textContent = error.message.includes("restricted")
@@ -140,6 +140,7 @@ function renderJobs() {
     const card = document.getElementById("job-template").content.cloneNode(true);
     card.querySelector(".job-card").style.setProperty("--order", index);
     setField(card, "filename", job.filename || "Untitled manuscript");
+    setField(card, "status", job.status || "unknown");
     setField(card, "payer", [job.payer_first_name, job.payer_last_name].filter(Boolean).join(" ") || "Payer name unavailable");
     setField(card, "paid_at", formatDate(job.paid_at));
     setField(card, "user_email", job.user_email || "Unavailable");
@@ -151,6 +152,16 @@ function renderJobs() {
     const download = card.querySelector("[data-download]");
     download.dataset.download = job.download_url;
     download.dataset.filename = job.filename;
+    const downloadList = card.querySelector('[data-field="downloads"]');
+    (job.outputs || []).forEach((output) => {
+      const audioButton = document.createElement("button");
+      audioButton.className = "download-button";
+      audioButton.type = "button";
+      audioButton.dataset.download = output.download_url;
+      audioButton.dataset.filename = output.filename;
+      audioButton.textContent = `Download ${output.title} MP3`;
+      downloadList.append(audioButton);
+    });
     jobList.append(card);
   });
 }

@@ -72,6 +72,12 @@ function hostinger_config(): array
         'payfast_return_url' => config_value($fileConfig, 'PAYFAST_RETURN_URL', null),
         'payfast_cancel_url' => config_value($fileConfig, 'PAYFAST_CANCEL_URL', null),
         'payfast_notify_url' => config_value($fileConfig, 'PAYFAST_NOTIFY_URL', null),
+        'openrouter_api_key' => config_value($fileConfig, 'OPENROUTER_API_KEY', null),
+        'openrouter_tts_model' => config_value($fileConfig, 'OPENROUTER_TTS_MODEL', 'x-ai/grok-voice-tts-1.0'),
+        'openrouter_tts_url' => config_value($fileConfig, 'OPENROUTER_TTS_URL', 'https://openrouter.ai/api/v1/audio/speech'),
+        'tts_chunk_characters' => max(1000, min(12000, (int) config_value($fileConfig, 'TTS_CHUNK_CHARACTERS', 4500))),
+        'tts_request_timeout' => max(30, min(330, (int) config_value($fileConfig, 'TTS_REQUEST_TIMEOUT', 300))),
+        'worker_chunks_per_run' => max(1, min(10, (int) config_value($fileConfig, 'WORKER_CHUNKS_PER_RUN', 1))),
         'enable_test_login' => filter_var(config_value($fileConfig, 'ENABLE_TEST_LOGIN', false), FILTER_VALIDATE_BOOLEAN),
         'test_login_email' => config_value($fileConfig, 'TEST_LOGIN_EMAIL', ''),
         'test_login_password' => config_value($fileConfig, 'TEST_LOGIN_PASSWORD', ''),
@@ -389,6 +395,24 @@ function narrator_voice_pricing(string $voice): ?array
     ];
 }
 
+function production_voice_config(string $voice): ?array
+{
+    $voices = [6 => 'Eve', 7 => 'Ara', 8 => 'Rex', 9 => 'Sal', 10 => 'Leo'];
+    if (!preg_match('/^Voice ([1-9]|[12][0-9]|3[0-5])$/', trim($voice), $matches)) {
+        return null;
+    }
+    $number = (int) $matches[1];
+    if (!isset($voices[$number])) {
+        return null;
+    }
+    return ['public_label' => 'Voice ' . $number, 'provider_voice' => $voices[$number]];
+}
+
+function production_configured(array $config): bool
+{
+    return !empty($config['openrouter_api_key']) && !empty($config['openrouter_tts_model']);
+}
+
 function total_cost_cents(int $wordCount, string $narratorVoice, bool $alsoWav, bool $translate, bool $makeVideo): float
 {
     $voicePricing = narrator_voice_pricing($narratorVoice);
@@ -516,6 +540,17 @@ function list_paid_records(string $uploadDir): array
         static fn(array $record): bool => ($record['status'] ?? '') === 'paid',
     ));
     usort($records, fn ($a, $b) => strcmp($b['paid_at'] ?? '', $a['paid_at'] ?? ''));
+    return $records;
+}
+
+function list_production_records(string $uploadDir): array
+{
+    $statuses = ['paid', 'queued', 'processing', 'completed', 'failed'];
+    $records = array_values(array_filter(
+        list_all_records($uploadDir),
+        static fn(array $record): bool => in_array(($record['status'] ?? ''), $statuses, true),
+    ));
+    usort($records, fn ($a, $b) => strcmp($b['paid_at'] ?? $b['created_at'] ?? '', $a['paid_at'] ?? $a['created_at'] ?? ''));
     return $records;
 }
 
