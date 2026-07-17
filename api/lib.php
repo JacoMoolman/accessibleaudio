@@ -69,6 +69,7 @@ function hostinger_config(): array
         'payfast_merchant_key' => config_value($fileConfig, 'PAYFAST_MERCHANT_KEY', null),
         'payfast_passphrase' => config_value($fileConfig, 'PAYFAST_PASSPHRASE', null),
         'payfast_sandbox' => filter_var(config_value($fileConfig, 'PAYFAST_SANDBOX', true), FILTER_VALIDATE_BOOLEAN),
+        'payfast_unsigned_sandbox' => filter_var(config_value($fileConfig, 'PAYFAST_UNSIGNED_SANDBOX', false), FILTER_VALIDATE_BOOLEAN),
         'payfast_return_url' => config_value($fileConfig, 'PAYFAST_RETURN_URL', null),
         'payfast_cancel_url' => config_value($fileConfig, 'PAYFAST_CANCEL_URL', null),
         'payfast_notify_url' => config_value($fileConfig, 'PAYFAST_NOTIFY_URL', null),
@@ -453,7 +454,9 @@ function build_payfast_checkout(array $config, array $user, array $record, int $
         'custom_str1' => $record['id'],
         'custom_str2' => $record['user_id'],
     ];
-    $fields['signature'] = payfast_signature($fields, $config['payfast_passphrase']);
+    if (!payfast_uses_unsigned_shared_sandbox($config)) {
+        $fields['signature'] = payfast_signature($fields, (string) $config['payfast_passphrase']);
+    }
     $host = $config['payfast_sandbox'] ? 'sandbox.payfast.co.za' : 'www.payfast.co.za';
     return [
         'provider' => 'payfast',
@@ -466,7 +469,21 @@ function build_payfast_checkout(array $config, array $user, array $record, int $
 
 function payfast_configured(array $config): bool
 {
-    return (bool) ($config['payfast_merchant_id'] && $config['payfast_merchant_key'] && $config['payfast_passphrase']);
+    return (bool) (
+        $config['payfast_merchant_id']
+        && $config['payfast_merchant_key']
+        && ($config['payfast_passphrase'] || payfast_uses_unsigned_shared_sandbox($config))
+    );
+}
+
+function payfast_uses_unsigned_shared_sandbox(array $config): bool
+{
+    return (bool) (
+        ($config['payfast_sandbox'] ?? false)
+        && ($config['payfast_unsigned_sandbox'] ?? false)
+        && hash_equals('10000100', (string) ($config['payfast_merchant_id'] ?? ''))
+        && hash_equals('46f0cd694581a', (string) ($config['payfast_merchant_key'] ?? ''))
+    );
 }
 
 function payfast_signature(array $fields, string $passphrase): string
@@ -477,7 +494,9 @@ function payfast_signature(array $fields, string $passphrase): string
             $parts[] = $key . '=' . urlencode(trim((string) $fields[$key]));
         }
     }
-    $parts[] = 'passphrase=' . urlencode(trim($passphrase));
+    if (trim($passphrase) !== '') {
+        $parts[] = 'passphrase=' . urlencode(trim($passphrase));
+    }
     return md5(implode('&', $parts));
 }
 

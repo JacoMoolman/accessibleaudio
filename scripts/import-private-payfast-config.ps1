@@ -18,6 +18,7 @@ $requiredKeys = @(
   "PAYFAST_MERCHANT_KEY",
   "PAYFAST_PASSPHRASE",
   "PAYFAST_SANDBOX",
+  "PAYFAST_UNSIGNED_SANDBOX",
   "PAYFAST_RETURN_URL",
   "PAYFAST_CANCEL_URL",
   "PAYFAST_NOTIFY_URL"
@@ -29,7 +30,7 @@ foreach ($key in $requiredKeys) {
   if ($null -eq $property) {
     throw "PayFast source file is missing $key"
   }
-  if ($key -ne "PAYFAST_SANDBOX" -and [string]::IsNullOrWhiteSpace([string] $property.Value)) {
+  if ($key -notin @("PAYFAST_SANDBOX", "PAYFAST_UNSIGNED_SANDBOX", "PAYFAST_PASSPHRASE") -and [string]::IsNullOrWhiteSpace([string] $property.Value)) {
     throw "PayFast source file contains an empty $key"
   }
 }

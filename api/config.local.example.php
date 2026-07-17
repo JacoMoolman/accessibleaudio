@@ -17,6 +17,8 @@ return [
     'PAYFAST_MERCHANT_KEY' => null,
     'PAYFAST_PASSPHRASE' => null,
     'PAYFAST_SANDBOX' => true,
+    // Only for PayFast's public 10000100 sandbox account, which currently rejects signed test forms.
+    'PAYFAST_UNSIGNED_SANDBOX' => false,
     'OPENROUTER_API_KEY' => null,
     'OPENROUTER_TTS_MODEL' => 'x-ai/grok-voice-tts-1.0',
     'TTS_CHUNK_CHARACTERS' => 4500,

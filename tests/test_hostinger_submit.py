@@ -164,6 +164,18 @@ def test_upload_is_rejected_before_storage_when_payfast_is_not_configured():
     assert "function payfast_configured(array $config): bool" in php_lib
 
 
+def test_unsigned_checkout_is_restricted_to_payfast_public_sandbox_account():
+    php_lib = read("api/lib.php")
+    example = read("api/config.local.example.php")
+
+    assert "function payfast_uses_unsigned_shared_sandbox(array $config): bool" in php_lib
+    assert "hash_equals('10000100'" in php_lib
+    assert "hash_equals('46f0cd694581a'" in php_lib
+    assert "if (!payfast_uses_unsigned_shared_sandbox($config))" in php_lib
+    assert "PAYFAST_UNSIGNED_SANDBOX" in example
+    assert "'PAYFAST_UNSIGNED_SANDBOX' => false" in example
+
+
 def test_test_login_tokens_are_signed_and_expire():
     php_lib = read("api/lib.php")
     test_login = read("api/test-login.php")

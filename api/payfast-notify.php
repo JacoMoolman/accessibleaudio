@@ -164,7 +164,9 @@ function payfast_notification_signature(array $payload, string $passphrase): str
             $parts[] = $key . '=' . urlencode(trim((string) $value));
         }
     }
-    $parts[] = 'passphrase=' . urlencode(trim($passphrase));
+    if (trim($passphrase) !== '') {
+        $parts[] = 'passphrase=' . urlencode(trim($passphrase));
+    }
     return md5(implode('&', $parts));
 }
 
