@@ -12,6 +12,16 @@ foreach ($line in Get-Content -LiteralPath $EnvPath) {
   }
 }
 $hostValue = if ($values.FTP_IP) { $values.FTP_IP } else { $values.FTP_HOST }
+$allowedSuffix = if ($values.FTP_TLS_ALLOWED_CERT_SUFFIX) { $values.FTP_TLS_ALLOWED_CERT_SUFFIX.ToLowerInvariant() } else { ".hstgr.io" }
+$previousCertificateCallback = [System.Net.ServicePointManager]::ServerCertificateValidationCallback
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {
+  param($sender, $certificate, $chain, $sslPolicyErrors)
+  if ($sslPolicyErrors -eq [System.Net.Security.SslPolicyErrors]::None) { return $true }
+  if ($sslPolicyErrors -ne [System.Net.Security.SslPolicyErrors]::RemoteCertificateNameMismatch) { return $false }
+  $dnsName = $certificate.GetNameInfo([System.Security.Cryptography.X509Certificates.X509NameType]::DnsName, $false)
+  return $dnsName.ToLowerInvariant().EndsWith($allowedSuffix)
+}
 $request = [System.Net.FtpWebRequest]::Create("ftp://$hostValue/api/config.local.php")
 $request.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
 $request.Credentials = [System.Net.NetworkCredential]::new($values.FTP_USERNAME, $values.FTP_PASSWORD)
@@ -20,9 +30,13 @@ $request.UseBinary = $true
 $request.UsePassive = $true
 $bytes = [System.IO.File]::ReadAllBytes((Resolve-Path -LiteralPath $ConfigPath))
 $request.ContentLength = $bytes.Length
-$stream = $request.GetRequestStream()
-$stream.Write($bytes, 0, $bytes.Length)
-$stream.Close()
-$response = $request.GetResponse()
-$response.Close()
-Write-Output "Uploaded the ignored private API configuration over FTPS."
+try {
+  $stream = $request.GetRequestStream()
+  $stream.Write($bytes, 0, $bytes.Length)
+  $stream.Close()
+  $response = $request.GetResponse()
+  $response.Close()
+  Write-Output "Uploaded the ignored private API configuration over FTPS."
+} finally {
+  [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $previousCertificateCallback
+}
