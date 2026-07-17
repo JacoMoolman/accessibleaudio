@@ -19,19 +19,25 @@ foreach ($_POST as $key => $value) {
         $payload[$key] = trim((string) $value);
     }
 }
+payfast_itn_audit($config, 'received', $payload);
 if (!$payload || empty($payload['signature'])) {
+    payfast_itn_audit($config, 'invalid_notification', $payload);
     json_error('Invalid PayFast notification', 400);
 }
 if (!hash_equals((string) $config['payfast_merchant_id'], (string) ($payload['merchant_id'] ?? ''))) {
+    payfast_itn_audit($config, 'merchant_mismatch', $payload);
     json_error('PayFast merchant does not match', 400);
 }
 if (!hash_equals(strtolower(payfast_notification_signature($payload, (string) $config['payfast_passphrase'])), strtolower($payload['signature']))) {
+    payfast_itn_audit($config, 'signature_mismatch', $payload);
     json_error('Invalid PayFast signature', 400);
 }
 if (!payfast_server_validation($payload, (bool) $config['payfast_sandbox'])) {
+    payfast_itn_audit($config, 'server_validation_failed', $payload);
     json_error('PayFast could not validate this notification', 400);
 }
 if (strtoupper((string) ($payload['payment_status'] ?? '')) !== 'COMPLETE') {
+    payfast_itn_audit($config, 'payment_not_complete', $payload);
     json_response(['ok' => true, 'ignored' => 'payment_not_complete']);
 }
 
@@ -40,12 +46,14 @@ if ($uploadId === '' && preg_match('/^AA-([0-9a-f-]{36})$/i', (string) ($payload
     $uploadId = $matches[1];
 }
 if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $uploadId)) {
+    payfast_itn_audit($config, 'invalid_payment_reference', $payload);
     json_error('Invalid payment reference', 400);
 }
 
 $uploadDir = ensure_upload_dir($config);
 $record = find_upload_record_any($uploadDir, $uploadId);
 if ($record === null) {
+    payfast_itn_audit($config, 'upload_not_found', $payload);
     json_error('Upload not found', 404);
 }
 $uploadPath = rtrim($uploadDir, '/\\')
@@ -83,6 +91,7 @@ $expectedCents = total_cost_cents(
 );
 $amountGross = (float) ($payload['amount_gross'] ?? -1);
 if (abs($amountGross - ($expectedCents / 100)) > 0.01) {
+    payfast_itn_audit($config, 'amount_mismatch', $payload);
     json_error('Payment amount does not match the upload', 400);
 }
 
@@ -110,8 +119,10 @@ $record = update_upload_record($uploadDir, $uploadId, static function (array $re
     return $record;
 });
 if ($record === null) {
+    payfast_itn_audit($config, 'update_failed', $payload);
     json_error('Upload not found', 404);
 }
+payfast_itn_audit($config, 'queued', $payload);
 
 if (($record['admin_notification_claim'] ?? '') === $claimToken && empty($record['admin_notified_at'])) {
     $replyEmail = (string) ($record['payer_email'] ?: ($record['user_email'] ?? ''));
@@ -152,6 +163,23 @@ if (($record['admin_notification_claim'] ?? '') === $claimToken && empty($record
 }
 
 json_response(['ok' => true]);
+
+function payfast_itn_audit(array $config, string $stage, array $payload): void
+{
+    $entry = [
+        'time' => gmdate('c'),
+        'stage' => $stage,
+        'merchant_id' => (string) ($payload['merchant_id'] ?? ''),
+        'payment_status' => (string) ($payload['payment_status'] ?? ''),
+        'm_payment_id' => (string) ($payload['m_payment_id'] ?? ''),
+        'custom_str1' => (string) ($payload['custom_str1'] ?? ''),
+        'amount_gross' => (string) ($payload['amount_gross'] ?? ''),
+        'signature_present' => !empty($payload['signature']),
+        'signature_length' => strlen((string) ($payload['signature'] ?? '')),
+    ];
+    $path = rtrim(ensure_upload_dir($config), '/\\') . '/payfast-itn-audit.jsonl';
+    @file_put_contents($path, json_encode($entry, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND | LOCK_EX);
+}
 
 function payfast_notification_signature(array $payload, string $passphrase): string
 {

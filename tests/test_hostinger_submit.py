@@ -446,6 +446,10 @@ def test_paid_payfast_notifications_are_verified_and_idempotent():
 
     assert "payfast_notification_signature" in endpoint
     assert "payfast_server_validation" in endpoint
+    assert "payfast_itn_audit" in endpoint
+    assert "signature_mismatch" in endpoint
+    assert "server_validation_failed" in endpoint
+    assert "payfast-itn-audit.jsonl" in endpoint
     assert "/eng/query/validate" in endpoint
     assert "payment_status" in endpoint and "COMPLETE" in endpoint
     assert "Payment amount does not match the upload" in endpoint
