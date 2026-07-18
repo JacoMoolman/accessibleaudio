@@ -159,7 +159,7 @@ function renderJobs() {
       audioButton.type = "button";
       audioButton.dataset.download = output.download_url;
       audioButton.dataset.filename = output.filename;
-      audioButton.textContent = `Download ${output.title} WAV`;
+      audioButton.textContent = `Download ${output.title} ${audioFormat(output.filename)}`;
       downloadList.append(audioButton);
     });
     jobList.append(card);
@@ -168,6 +168,11 @@ function renderJobs() {
 
 function setField(root, field, value) {
   root.querySelector(`[data-field="${field}"]`).textContent = value;
+}
+
+function audioFormat(filename) {
+  const extension = String(filename || "").match(/\.([a-z0-9]+)$/i)?.[1];
+  return extension ? extension.toUpperCase() : "audio";
 }
 
 function productionText(job) {

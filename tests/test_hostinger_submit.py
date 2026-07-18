@@ -563,6 +563,22 @@ def test_private_admin_queue_requires_configured_google_admin_and_secure_downloa
     assert "/admin/" not in sitemap
 
 
+def test_admin_job_layout_keeps_metadata_readable_beside_multiple_downloads():
+    html = read("admin/index.html")
+    app_js = read("admin/app.js")
+    styles = read("admin/styles.css")
+
+    assert 'styles.css?v=20260718-layout1' in html
+    assert 'app.js?v=20260718-layout1' in html
+    assert "grid-template-columns: minmax(220px, .7fr) minmax(0, 1.4fr);" in styles
+    assert ".download-list { display: flex; grid-column: 1 / -1;" in styles
+    assert "dl div:last-child { grid-column: 1 / -1; }" in styles
+    assert "dl div:last-child { grid-column: auto; }" in styles
+    assert "minmax(0, 1.4fr) auto" not in styles
+    assert "audioFormat(output.filename)" in app_js
+    assert "function audioFormat(filename)" in app_js
+
+
 def test_hostinger_php_backend_stores_uploads_locally_without_aws_or_s3_keys():
     api_files = list((ROOT / "api").glob("*.php"))
     assert api_files
