@@ -20,7 +20,7 @@ return [
     // Only for PayFast's public 10000100 sandbox account, which currently rejects signed test forms.
     'PAYFAST_UNSIGNED_SANDBOX' => false,
     'OPENROUTER_API_KEY' => null,
-    'OPENROUTER_TTS_MODEL' => 'x-ai/grok-voice-tts-1.0',
+    'OPENROUTER_TTS_MODEL' => 'google/gemini-3.1-flash-tts-preview',
     'TTS_CHUNK_CHARACTERS' => 4500,
     'TTS_REQUEST_TIMEOUT' => 300,
     'WORKER_CHUNKS_PER_RUN' => 1,

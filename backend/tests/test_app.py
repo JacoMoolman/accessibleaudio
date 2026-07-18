@@ -210,7 +210,7 @@ def test_submit_page_nav_points_back_to_public_website():
     assert 'class="site-header"' in response.text
     assert 'href="https://accessibleaudio.co.za/"' in response.text
     assert 'href="https://accessibleaudio.co.za/#service"' in response.text
-    assert 'href="https://accessibleaudio.co.za/#private"' in response.text
+    assert 'href="https://accessibleaudio.co.za/#process"' in response.text
     assert 'href="https://accessibleaudio.co.za/#languages"' in response.text
     assert 'href="https://accessibleaudio.co.za/audiobooks.html"' in response.text
     assert 'href="https://accessibleaudio.co.za/contact.html"' in response.text

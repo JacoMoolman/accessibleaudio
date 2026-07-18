@@ -1,12 +1,8 @@
 (() => {
   const voices = window.ACCESSIBLE_AUDIO_VOICES || [];
-  const lists = {
-    local: document.getElementById("local-voice-list"),
-    cloud: document.getElementById("cloud-voice-list"),
-  };
+  const list = document.getElementById("voice-list");
 
   voices.forEach((voice) => {
-    const list = lists[voice.type];
     if (!list) return;
     const card = document.createElement("article");
     card.className = "voice-card";

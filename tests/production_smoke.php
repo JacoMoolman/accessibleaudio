@@ -24,18 +24,26 @@ $temporaryDirectory = dirname(__DIR__) . '/tmp';
 if (!is_dir($temporaryDirectory)) {
     mkdir($temporaryDirectory, 0750, true);
 }
-$joinedPath = $temporaryDirectory . '/production-smoke-joined.mp3';
-$result = join_mp3_chunks([
-    dirname(__DIR__) . '/assets/voice-samples/catalog/voice-06.mp3',
-    dirname(__DIR__) . '/assets/voice-samples/catalog/voice-07.mp3',
-], $joinedPath);
-$inspection = inspect_mp3_file($joinedPath);
-assert_true($result['bytes'] > 10000, 'Joined MP3 must contain audio data');
-assert_true($inspection['frames'] > 10, 'Joined MP3 must contain valid frames');
+$pcmOne = $temporaryDirectory . '/production-smoke-one.pcm';
+$pcmTwo = $temporaryDirectory . '/production-smoke-two.pcm';
+$joinedPath = $temporaryDirectory . '/production-smoke-joined.wav';
+file_put_contents($pcmOne, str_repeat(pack('v', 1200), 3000));
+file_put_contents($pcmTwo, str_repeat(pack('v', 2200), 3000));
+$result = join_pcm_chunks_as_wav([$pcmOne, $pcmTwo], $joinedPath);
+$wav = file_get_contents($joinedPath);
+assert_true($result['bytes'] === 12044, 'Joined WAV must contain its header and all PCM data');
+assert_true(substr($wav, 0, 4) === 'RIFF', 'Joined WAV must have a RIFF header');
+assert_true(substr($wav, 8, 4) === 'WAVE', 'Joined WAV must identify the WAVE format');
+assert_true(unpack('V', substr($wav, 24, 4))[1] === 24000, 'Joined WAV must use the provider sample rate');
+assert_true(unpack('v', substr($wav, 34, 2))[1] === 16, 'Joined WAV must contain 16-bit samples');
+assert_true(unpack('V', substr($wav, 40, 4))[1] === 12000, 'Joined WAV data length must match the PCM chunks');
+@unlink($pcmOne);
+@unlink($pcmTwo);
+@unlink($joinedPath);
 
 echo json_encode([
     'chapters' => count($chapters),
     'chunks' => count($chunks),
     'joined_bytes' => $result['bytes'],
-    'joined_frames' => $inspection['frames'],
+    'sample_rate' => $result['sample_rate'],
 ], JSON_UNESCAPED_SLASHES) . PHP_EOL;

@@ -15,7 +15,7 @@ def test_hostinger_submit_frontend_uses_php_api_and_client_side_analysis():
     app_js = read("submit/app.js")
 
     assert 'href="./styles.css?v=20260717-production1"' in html
-    assert 'src="./app.js?v=20260717-production1"' in html
+    assert 'src="./app.js?v=20260718-cloud2"' in html
     assert 'fetchJson("/api/config.php")' in app_js
     assert 'fetchJson("/api/process-file.php"' in app_js
     assert 'fetchJson("/api/files.php"' in app_js
@@ -98,7 +98,7 @@ def test_submit_narrator_sample_has_working_stop_control():
     assert 'id="play-narrator-sample"' in page
     assert 'id="stop-narrator-sample" disabled' in page
     assert "styles.css?v=20260717-production1" in page
-    assert "app.js?v=20260717-production1" in page
+    assert "app.js?v=20260718-cloud2" in page
     assert 'getElementById("stop-narrator-sample")' in app_js
     assert "stopNarratorSampleButton.disabled = false" in app_js
     assert "audio.pause()" in app_js
@@ -190,7 +190,7 @@ def test_test_login_tokens_are_signed_and_expire():
     assert "str_starts_with($token, 'test-')" not in php_lib
 
 
-def test_numbered_voice_catalog_is_grouped_and_priced_without_naming_vendors():
+def test_numbered_voice_catalog_is_cloud_only_and_priced_without_naming_vendors():
     page = read("voice-samples.html")
     page_js = read("scripts/voice-samples.js")
     catalog_js = read("scripts/voice-catalog.js")
@@ -200,34 +200,33 @@ def test_numbered_voice_catalog_is_grouped_and_priced_without_naming_vendors():
     process_file = read("api/process-file.php")
 
     public_voice_interface = "\n".join((page, page_js, catalog_js)).lower()
-    for provider_name in ("gemini", "google text", "omnivoice", "voice provider", "local ai"):
+    for provider_name in ("gemini", "google text", "omnivoice", "voice provider", "local ai", "grok"):
         assert provider_name not in public_voice_interface
 
-    assert "const voiceCount = 35" in catalog_js
-    assert "const localVoiceCount = 5" in catalog_js
-    assert "localCostPerWordCents = 0.5" in catalog_js
-    assert "cloudCostPerWordCents = localCostPerWordCents * 1.5" in catalog_js
-    assert 'type === "local" ? "Local voices" : "Cloud voices"' in catalog_js
+    assert "const firstVoiceNumber = 6" in catalog_js
+    assert "const voiceCount = 30" in catalog_js
+    assert "const costPerWordCents = 0.75" in catalog_js
+    assert 'typeLabel: "Voice narration"' in catalog_js
     assert "/assets/voice-samples/catalog/voice-" in catalog_js
     assert "window.ACCESSIBLE_AUDIO_VOICES" in page_js
-    assert 'id="local-voice-list"' in page
-    assert 'id="cloud-voice-list"' in page
-    assert "0.5c" in page
+    assert 'id="voice-list"' in page
+    assert "Available voices" in page
     assert "0.75c" in page
     assert "voice-provider-button" not in page
-    assert "../scripts/voice-catalog.js?v=20260717-production1" in submit_html
+    assert "../scripts/voice-catalog.js?v=20260718-cloud1" in submit_html
     assert "The numbers match the" not in submit_html
-    assert "Automated Grok voices: 0.75c/word." in submit_html
+    assert "Voice narration: 0.75c/word." in submit_html
     assert 'href="https://accessibleaudio.co.za/voice-samples.html">Voice samples</a>' in submit_html
     assert "VOICE_CATALOG.map" in submit_js
     assert "populateNarratorVoices" in submit_js
     assert 'document.createElement("optgroup")' in submit_js
-    assert '["local", "cloud"]' in submit_js
+    assert "Choose a voice to calculate the production price." in submit_js
     assert "selectedVoice.costPerWordCents" in submit_js
     assert "voice.availableForProduction" in submit_js
-    assert "availableForProduction: number >= 6 && number <= 10" in catalog_js
-    assert "LOCAL_COST_PER_WORD_CENTS = 0.5" in php_lib
-    assert "CLOUD_COST_PER_WORD_CENTS = LOCAL_COST_PER_WORD_CENTS * 1.5" in php_lib
+    assert "availableForProduction: true" in catalog_js
+    assert "VOICE_COST_PER_WORD_CENTS = 0.75" in php_lib
+    assert "6 => 'Zephyr'" in php_lib
+    assert "35 => 'Sulafat'" in php_lib
     assert "narrator_voice_pricing" in php_lib
     assert "total_cost_cents(int $wordCount, string $narratorVoice" in php_lib
     assert "'voice_type' => $voicePricing['type']" in process_file
@@ -507,7 +506,7 @@ def test_paid_payfast_notifications_are_verified_and_idempotent():
     assert "['uploaded', 'paid']" in endpoint
 
 
-def test_paid_orders_are_processed_server_side_into_downloadable_mp3_chapters():
+def test_paid_orders_are_processed_server_side_into_downloadable_wav_chapters():
     production = read("api/production.php")
     worker = read("api/process-queue.php")
     download = read("api/download-audio.php")
@@ -520,12 +519,12 @@ def test_paid_orders_are_processed_server_side_into_downloadable_mp3_chapters():
     assert "split_book_into_chapters" in production
     assert "chunk_speech_text" in production
     assert "generate_tts_chunk" in production
-    assert "x-ai/grok-voice-tts-1.0" in read("api/lib.php")
-    assert "join_mp3_chunks" in production
-    assert "mp3_frame_info" in production
-    assert "response_format' => 'mp3'" in production
+    assert "google/gemini-3.1-flash-tts-preview" in read("api/lib.php")
+    assert "join_pcm_chunks_as_wav" in production
+    assert "wav_header" in production
+    assert "response_format' => 'pcm'" in production
     assert "completion_email_sent_at" in production
-    assert "Content-Type: audio/mpeg" in download
+    assert "Content-Type: audio/wav" in download
     assert "current_user($config)" in download
     assert "download_url" in user_files
     assert "data-download-audio" in user_app

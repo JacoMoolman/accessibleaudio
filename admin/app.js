@@ -159,7 +159,7 @@ function renderJobs() {
       audioButton.type = "button";
       audioButton.dataset.download = output.download_url;
       audioButton.dataset.filename = output.filename;
-      audioButton.textContent = `Download ${output.title} MP3`;
+      audioButton.textContent = `Download ${output.title} WAV`;
       downloadList.append(audioButton);
     });
     jobList.append(card);

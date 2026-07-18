@@ -21,7 +21,7 @@ if ($body -match "(?m)^\s*'OPENROUTER_API_KEY'\s*=>") {
     "    'OPENROUTER_API_KEY' => '$escapedKey',"
   )
 } else {
-  $body = $body -replace "(?m)^\];\s*$", "    'OPENROUTER_API_KEY' => '$escapedKey',`n    'OPENROUTER_TTS_MODEL' => 'x-ai/grok-voice-tts-1.0',`n];"
+$body = $body -replace "(?m)^\];\s*$", "    'OPENROUTER_API_KEY' => '$escapedKey',`n    'OPENROUTER_TTS_MODEL' => 'google/gemini-3.1-flash-tts-preview',`n];"
 }
 [System.IO.File]::WriteAllText($TargetPath, $body, [System.Text.UTF8Encoding]::new($false))
 Write-Output "Imported the OpenRouter key into the ignored local PHP configuration."

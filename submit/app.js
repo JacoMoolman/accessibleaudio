@@ -43,22 +43,17 @@ init();
 
 function populateNarratorVoices() {
   const select = document.getElementById("narrator-voice");
-  ["local", "cloud"].forEach((type) => {
-    const voices = VOICE_CATALOG.filter(
-      (voice) => voice.type === type && voice.availableForProduction
-    );
-    if (!voices.length) return;
-    const group = document.createElement("optgroup");
-    const rate = voices[0].costPerWordCents;
-    group.label = `${voices[0].typeLabel} — ${formatCentsPerWord(rate)}`;
-    voices.forEach((voice) => {
-      const option = document.createElement("option");
-      option.value = voice.label;
-      option.textContent = voice.label;
-      group.append(option);
-    });
-    select.append(group);
+  const voices = VOICE_CATALOG.filter((voice) => voice.availableForProduction);
+  if (!voices.length) return;
+  const group = document.createElement("optgroup");
+  group.label = `Voices — ${formatCentsPerWord(voices[0].costPerWordCents)}`;
+  voices.forEach((voice) => {
+    const option = document.createElement("option");
+    option.value = voice.label;
+    option.textContent = voice.label;
+    group.append(option);
   });
+  select.append(group);
 }
 
 async function init() {
@@ -151,7 +146,7 @@ uploadForm.addEventListener("submit", async (event) => {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("narrator_voice", document.getElementById("narrator-voice").value);
-  formData.append("output_format", "mp3");
+  formData.append("output_format", "wav");
   formData.append("also_wav", "false");
   formData.append("translate", "false");
   formData.append("translation_languages", "");
@@ -195,7 +190,7 @@ filesList.addEventListener("click", async (event) => {
   if (downloadButton && currentSession?.access_token) {
     await downloadAuthenticatedFile(
       downloadButton.dataset.downloadAudio,
-      downloadButton.dataset.filename || "chapter.mp3",
+      downloadButton.dataset.filename || "chapter.wav",
       downloadButton
     );
     return;
@@ -360,7 +355,7 @@ function renderAnalysisResult(message = "", isError = false) {
   }
 
   const wordCount = Number(fileAnalysis.word_count || 0).toLocaleString();
-  analysisResult.textContent = `${fileAnalysis.source_language || "Unknown"} detected, ${fileAnalysis.chapter_count} chapter${fileAnalysis.chapter_count === 1 ? "" : "s"} found (${wordCount} words). Choose a Local or Cloud voice to calculate the production price.`;
+  analysisResult.textContent = `${fileAnalysis.source_language || "Unknown"} detected, ${fileAnalysis.chapter_count} chapter${fileAnalysis.chapter_count === 1 ? "" : "s"} found (${wordCount} words). Choose a voice to calculate the production price.`;
   analysisResult.classList.remove("error");
   chapterList.innerHTML = fileAnalysis.chapters
     .map((chapter) => `<li>${escapeHtml(chapter.title)}</li>`)
@@ -565,7 +560,7 @@ function renderFile(file) {
           type="button"
           data-download-audio="${escapeHtml(output.download_url)}"
           data-filename="${escapeHtml(output.filename)}"
-        >Download ${escapeHtml(output.title)} MP3</button>`).join("")}</div>`
+        >Download ${escapeHtml(output.title)} WAV</button>`).join("")}</div>`
     : "";
   return `
     <article class="file-row">

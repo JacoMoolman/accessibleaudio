@@ -27,7 +27,7 @@ if ($voicePricing === null) {
     json_error('Choose a valid narrator voice', 400);
 }
 if (production_voice_config($narratorVoice) === null) {
-    json_error('Choose a cloud narrator voice for automated production', 400);
+    json_error('Choose an available narrator voice for automated production', 400);
 }
 $uploadDir = ensure_upload_dir($config);
 

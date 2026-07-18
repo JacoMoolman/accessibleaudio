@@ -62,7 +62,7 @@ function build_production_manifest(array $config, string $uploadDir, array $reco
                 'text' => $chunkText,
                 'status' => 'pending',
                 'attempts' => 0,
-                'file' => sprintf('chunks/chapter-%02d-chunk-%04d.mp3', $chapterIndex + 1, $chunkIndex + 1),
+                'file' => sprintf('chunks/chapter-%02d-chunk-%04d.pcm', $chapterIndex + 1, $chunkIndex + 1),
             ];
         }
         $manifestChapters[] = [
@@ -73,7 +73,7 @@ function build_production_manifest(array $config, string $uploadDir, array $reco
         ];
     }
     return [
-        'version' => 1,
+        'version' => 2,
         'upload_id' => $record['id'],
         'model' => $config['openrouter_tts_model'],
         'public_voice' => $voice['public_label'],
@@ -222,7 +222,7 @@ function generate_tts_chunk(array $config, array $manifest, array $chunk, string
         'model' => $manifest['model'],
         'input' => $chunk['text'],
         'voice' => $manifest['provider_voice'],
-        'response_format' => 'mp3',
+        'response_format' => 'pcm',
     ];
     $payload = json_encode($request, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     $curl = curl_init((string) $config['openrouter_tts_url']);
@@ -231,7 +231,7 @@ function generate_tts_chunk(array $config, array $manifest, array $chunk, string
         CURLOPT_HTTPHEADER => [
             'Authorization: Bearer ' . $config['openrouter_api_key'],
             'Content-Type: application/json',
-            'Accept: audio/mpeg',
+            'Accept: audio/pcm, application/octet-stream',
             'HTTP-Referer: ' . request_base_url($config),
             'X-Title: Accessible Audio',
         ],
@@ -258,10 +258,10 @@ function generate_tts_chunk(array $config, array $manifest, array $chunk, string
         @unlink($temporary);
         throw new RuntimeException('OpenRouter TTS failed' . ($status ? ' (HTTP ' . $status . ')' : '') . ': ' . trim($error ?: $body));
     }
-    $info = inspect_mp3_file($temporary);
-    if (($info['frames'] ?? 0) < 5) {
+    $info = inspect_pcm_file($temporary);
+    if (($info['samples'] ?? 0) < 2400) {
         @unlink($temporary);
-        throw new RuntimeException('OpenRouter returned an invalid MP3 chunk');
+        throw new RuntimeException('The voice service returned an invalid audio chunk');
     }
     if (!rename($temporary, $destination)) {
         @unlink($temporary);
@@ -270,142 +270,87 @@ function generate_tts_chunk(array $config, array $manifest, array $chunk, string
     return [
         'bytes' => filesize($destination),
         'generation_id' => $responseHeaders['x-generation-id'] ?? null,
-        'sample_rate' => $info['sample_rate'],
-        'mpeg_version' => $info['mpeg_version'],
-        'layer' => $info['layer'],
+        'sample_rate' => 24000,
+        'channels' => 1,
+        'bits_per_sample' => 16,
+        'samples' => $info['samples'],
     ];
 }
 
-function mp3_frame_info(string $header): ?array
+function inspect_pcm_file(string $path): array
 {
-    if (strlen($header) < 4) {
-        return null;
+    $bytes = filesize($path);
+    if ($bytes === false || $bytes < 2 || $bytes % 2 !== 0) {
+        throw new RuntimeException('The PCM audio data is incomplete');
     }
-    $value = unpack('N', $header)[1];
-    if (($value & 0xffe00000) !== 0xffe00000) {
-        return null;
-    }
-    $versionBits = ($value >> 19) & 3;
-    $layerBits = ($value >> 17) & 3;
-    $bitrateIndex = ($value >> 12) & 15;
-    $sampleIndex = ($value >> 10) & 3;
-    if ($versionBits === 1 || $layerBits !== 1 || $bitrateIndex === 0 || $bitrateIndex === 15 || $sampleIndex === 3) {
-        return null;
-    }
-    $version = $versionBits === 3 ? 1.0 : ($versionBits === 2 ? 2.0 : 2.5);
-    $bitrates = $version === 1.0
-        ? [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320]
-        : [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160];
-    $baseRates = [44100, 48000, 32000];
-    $sampleRate = (int) ($baseRates[$sampleIndex] / ($version === 1.0 ? 1 : ($version === 2.0 ? 2 : 4)));
-    $padding = ($value >> 9) & 1;
-    $coefficient = $version === 1.0 ? 144 : 72;
-    $length = (int) floor($coefficient * $bitrates[$bitrateIndex] * 1000 / $sampleRate) + $padding;
-    return [
-        'length' => $length,
-        'sample_rate' => $sampleRate,
-        'mpeg_version' => $version,
-        'layer' => 3,
-    ];
+    return ['bytes' => $bytes, 'samples' => intdiv($bytes, 2)];
 }
 
-function mp3_audio_offset(string $data): int
+function wav_header(int $dataBytes, int $sampleRate = 24000, int $channels = 1, int $bitsPerSample = 16): string
 {
-    if (substr($data, 0, 3) !== 'ID3' || strlen($data) < 10) {
-        return 0;
+    if ($dataBytes < 0 || $dataBytes > 0xffffffff - 36) {
+        throw new RuntimeException('The chapter audio is too large for a WAV file');
     }
-    $bytes = array_values(unpack('C4', substr($data, 6, 4)));
-    $size = (($bytes[0] & 0x7f) << 21) | (($bytes[1] & 0x7f) << 14) | (($bytes[2] & 0x7f) << 7) | ($bytes[3] & 0x7f);
-    return min(strlen($data), 10 + $size + ((ord($data[5]) & 0x10) ? 10 : 0));
+    $blockAlign = intdiv($channels * $bitsPerSample, 8);
+    $byteRate = $sampleRate * $blockAlign;
+    return 'RIFF'
+        . pack('V', 36 + $dataBytes)
+        . 'WAVEfmt '
+        . pack('VvvVVvv', 16, 1, $channels, $sampleRate, $byteRate, $blockAlign, $bitsPerSample)
+        . 'data'
+        . pack('V', $dataBytes);
 }
 
-function mp3_frames(string $data): array
+function join_pcm_chunks_as_wav(array $paths, string $destination): array
 {
-    $end = strlen($data);
-    if ($end >= 128 && substr($data, -128, 3) === 'TAG') {
-        $end -= 128;
+    $dataBytes = 0;
+    foreach ($paths as $path) {
+        $info = inspect_pcm_file($path);
+        $dataBytes += $info['bytes'];
     }
-    $offset = mp3_audio_offset($data);
-    while ($offset + 4 <= $end && mp3_frame_info(substr($data, $offset, 4)) === null) {
-        $offset++;
-    }
-    $frames = [];
-    while ($offset + 4 <= $end) {
-        $info = mp3_frame_info(substr($data, $offset, 4));
-        if ($info === null || $offset + $info['length'] > $end) {
-            break;
-        }
-        $frame = substr($data, $offset, $info['length']);
-        $frames[] = ['data' => $frame, 'info' => $info];
-        $offset += $info['length'];
-    }
-    return $frames;
-}
-
-function inspect_mp3_file(string $path): array
-{
-    $data = file_get_contents($path);
-    if ($data === false) {
-        throw new RuntimeException('Could not read MP3 data');
-    }
-    $frames = mp3_frames($data);
-    if (!$frames) {
-        throw new RuntimeException('No valid MP3 frames were found');
-    }
-    return $frames[0]['info'] + ['frames' => count($frames)];
-}
-
-function join_mp3_chunks(array $paths, string $destination): array
-{
     $temporary = $destination . '.part';
     $output = fopen($temporary, 'wb');
     if (!$output) {
-        throw new RuntimeException('Could not create the chapter MP3');
+        throw new RuntimeException('Could not create the chapter WAV');
     }
-    $expected = null;
-    $frameCount = 0;
     try {
+        if (fwrite($output, wav_header($dataBytes)) !== 44) {
+            throw new RuntimeException('Could not write the chapter WAV header');
+        }
         foreach ($paths as $path) {
-            $data = file_get_contents($path);
-            if ($data === false) {
+            $input = fopen($path, 'rb');
+            if (!$input) {
                 throw new RuntimeException('A chapter chunk could not be read');
             }
-            $frames = mp3_frames($data);
-            if (!$frames) {
-                throw new RuntimeException('A chapter chunk contains no MP3 frames');
-            }
-            $current = $frames[0]['info'];
-            $signature = [$current['sample_rate'], $current['mpeg_version'], $current['layer']];
-            if ($expected !== null && $signature !== $expected) {
-                throw new RuntimeException('Audio chunks use incompatible MP3 settings');
-            }
-            $expected = $signature;
-            foreach ($frames as $frame) {
-                $isVbrHeader = str_contains($frame['data'], 'Xing') || str_contains($frame['data'], 'Info') || str_contains($frame['data'], 'VBRI');
-                if ($isVbrHeader) {
-                    continue;
+            try {
+                if (stream_copy_to_stream($input, $output) === false) {
+                    throw new RuntimeException('Could not write the chapter WAV');
                 }
-                if (fwrite($output, $frame['data']) === false) {
-                    throw new RuntimeException('Could not write the chapter MP3');
-                }
-                $frameCount++;
+            } finally {
+                fclose($input);
             }
         }
     } finally {
         fclose($output);
     }
-    if ($frameCount < 5 || !rename($temporary, $destination)) {
+    if (!rename($temporary, $destination)) {
         @unlink($temporary);
-        throw new RuntimeException('Could not publish the chapter MP3');
+        throw new RuntimeException('Could not publish the chapter WAV');
     }
-    return ['bytes' => filesize($destination), 'frames' => $frameCount];
+    return [
+        'bytes' => filesize($destination),
+        'data_bytes' => $dataBytes,
+        'sample_rate' => 24000,
+        'channels' => 1,
+        'bits_per_sample' => 16,
+    ];
 }
 
 function safe_chapter_filename(int $index, string $title): string
 {
     $slug = strtolower(trim((string) preg_replace('/[^A-Za-z0-9]+/', '-', $title), '-'));
     $slug = substr($slug ?: 'chapter', 0, 70);
-    return sprintf('%02d-%s.mp3', $index, $slug);
+    return sprintf('%02d-%s.wav', $index, $slug);
 }
 
 function finalize_production(array $config, string $uploadDir, array $record, array &$manifest): array
@@ -425,7 +370,7 @@ function finalize_production(array $config, string $uploadDir, array $record, ar
             $paths[] = $baseDir . '/' . $chunk['file'];
         }
         $filename = safe_chapter_filename($chapterIndex + 1, (string) $chapter['title']);
-        $result = join_mp3_chunks($paths, $outputDir . '/' . $filename);
+        $result = join_pcm_chunks_as_wav($paths, $outputDir . '/' . $filename);
         $chapter['status'] = 'completed';
         $chapter['output_file'] = 'output/' . $filename;
         $outputs[] = [
@@ -466,7 +411,7 @@ function send_completion_email(array $config, string $uploadDir, array $record):
         'Book: ' . ($record['filename'] ?? 'Audiobook'),
         'Chapters: ' . count($record['outputs'] ?? []),
         '',
-        'Sign in to download your MP3 chapter files:',
+        'Sign in to download your WAV chapter files:',
         request_base_url($config) . '/submit/',
     ]);
     aa_send_smtp_email($config, (string) $record['user_email'], 'Your audiobook is ready: ' . ($record['filename'] ?? 'Audiobook'), $body);
@@ -520,7 +465,10 @@ function run_production_worker(array $config, bool $processAll = false): array
                 }) ?? $record;
             }
             $manifestPath = production_manifest_path($uploadDir, $record);
-            $manifest = read_production_manifest($manifestPath) ?? build_production_manifest($config, $uploadDir, $record);
+            $manifest = read_production_manifest($manifestPath);
+            if ($manifest === null || (int) ($manifest['version'] ?? 0) < 2) {
+                $manifest = build_production_manifest($config, $uploadDir, $record);
+            }
             write_production_manifest($manifestPath, $manifest);
             $next = next_manifest_chunk($manifest);
             if ($next === null) {

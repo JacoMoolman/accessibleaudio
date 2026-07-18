@@ -1,7 +1,6 @@
 <?php
 
-const LOCAL_COST_PER_WORD_CENTS = 0.5;
-const CLOUD_COST_PER_WORD_CENTS = LOCAL_COST_PER_WORD_CENTS * 1.5;
+const VOICE_COST_PER_WORD_CENTS = 0.75;
 const OPTION_COSTS_CENTS = [
     'also_wav' => 2500,
     'translate' => 5000,
@@ -74,7 +73,7 @@ function hostinger_config(): array
         'payfast_cancel_url' => config_value($fileConfig, 'PAYFAST_CANCEL_URL', null),
         'payfast_notify_url' => config_value($fileConfig, 'PAYFAST_NOTIFY_URL', null),
         'openrouter_api_key' => config_value($fileConfig, 'OPENROUTER_API_KEY', null),
-        'openrouter_tts_model' => config_value($fileConfig, 'OPENROUTER_TTS_MODEL', 'x-ai/grok-voice-tts-1.0'),
+        'openrouter_tts_model' => config_value($fileConfig, 'OPENROUTER_TTS_MODEL', 'google/gemini-3.1-flash-tts-preview'),
         'openrouter_tts_url' => config_value($fileConfig, 'OPENROUTER_TTS_URL', 'https://openrouter.ai/api/v1/audio/speech'),
         'tts_chunk_characters' => max(1000, min(12000, (int) config_value($fileConfig, 'TTS_CHUNK_CHARACTERS', 4500))),
         'tts_request_timeout' => max(30, min(330, (int) config_value($fileConfig, 'TTS_REQUEST_TIMEOUT', 300))),
@@ -350,8 +349,8 @@ function build_options_text(array $record, array $options): string
         'narrator_voice: ' . ($options['narrator_voice'] ?: 'not selected'),
         'voice_type: ' . ($voicePricing['type_label'] ?? 'not selected'),
         'cost_per_word_cents: ' . ($voicePricing['cost_per_word_cents'] ?? 'not selected'),
-        'output_format: mp3',
-        'also_wav: ' . ($options['also_wav'] ? 'true' : 'false'),
+        'output_format: wav',
+        'also_wav: false',
         'source_language: ' . ($options['source_language'] ?: 'not detected'),
         'detected_chapter_count: ' . count($options['chapter_titles']),
     ];
@@ -384,22 +383,51 @@ function format_zar_cents(float|int $cents): string
 
 function narrator_voice_pricing(string $voice): ?array
 {
-    if (!preg_match('/^Voice ([1-9]|[12][0-9]|3[0-5])$/', trim($voice), $matches)) {
+    if (!preg_match('/^Voice ([6-9]|[12][0-9]|3[0-5])$/', trim($voice), $matches)) {
         return null;
     }
-    $number = (int) $matches[1];
-    $isLocal = $number <= 5;
     return [
-        'type' => $isLocal ? 'local' : 'cloud',
-        'type_label' => $isLocal ? 'Local' : 'Cloud',
-        'cost_per_word_cents' => $isLocal ? LOCAL_COST_PER_WORD_CENTS : CLOUD_COST_PER_WORD_CENTS,
+        'type' => 'voice',
+        'type_label' => 'Voice',
+        'cost_per_word_cents' => VOICE_COST_PER_WORD_CENTS,
     ];
 }
 
 function production_voice_config(string $voice): ?array
 {
-    $voices = [6 => 'Eve', 7 => 'Ara', 8 => 'Rex', 9 => 'Sal', 10 => 'Leo'];
-    if (!preg_match('/^Voice ([1-9]|[12][0-9]|3[0-5])$/', trim($voice), $matches)) {
+    $voices = [
+        6 => 'Zephyr',
+        7 => 'Puck',
+        8 => 'Charon',
+        9 => 'Kore',
+        10 => 'Fenrir',
+        11 => 'Leda',
+        12 => 'Orus',
+        13 => 'Aoede',
+        14 => 'Callirrhoe',
+        15 => 'Autonoe',
+        16 => 'Enceladus',
+        17 => 'Iapetus',
+        18 => 'Umbriel',
+        19 => 'Algieba',
+        20 => 'Despina',
+        21 => 'Erinome',
+        22 => 'Algenib',
+        23 => 'Rasalgethi',
+        24 => 'Laomedeia',
+        25 => 'Achernar',
+        26 => 'Alnilam',
+        27 => 'Schedar',
+        28 => 'Gacrux',
+        29 => 'Pulcherrima',
+        30 => 'Achird',
+        31 => 'Zubenelgenubi',
+        32 => 'Vindemiatrix',
+        33 => 'Sadachbia',
+        34 => 'Sadaltager',
+        35 => 'Sulafat',
+    ];
+    if (!preg_match('/^Voice ([6-9]|[12][0-9]|3[0-5])$/', trim($voice), $matches)) {
         return null;
     }
     $number = (int) $matches[1];
