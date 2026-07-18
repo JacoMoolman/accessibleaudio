@@ -15,7 +15,7 @@ def test_hostinger_submit_frontend_uses_php_api_and_client_side_analysis():
     app_js = read("submit/app.js")
 
     assert 'href="./styles.css?v=20260717-production1"' in html
-    assert 'src="./app.js?v=20260718-cloud2"' in html
+    assert 'src="./app.js?v=20260718-mp31"' in html
     assert 'fetchJson("/api/config.php")' in app_js
     assert 'fetchJson("/api/process-file.php"' in app_js
     assert 'fetchJson("/api/files.php"' in app_js
@@ -98,7 +98,7 @@ def test_submit_narrator_sample_has_working_stop_control():
     assert 'id="play-narrator-sample"' in page
     assert 'id="stop-narrator-sample" disabled' in page
     assert "styles.css?v=20260717-production1" in page
-    assert "app.js?v=20260718-cloud2" in page
+    assert "app.js?v=20260718-mp31" in page
     assert 'getElementById("stop-narrator-sample")' in app_js
     assert "stopNarratorSampleButton.disabled = false" in app_js
     assert "audio.pause()" in app_js
@@ -147,7 +147,8 @@ def test_submission_requires_versioned_terms_and_links_to_full_page():
     assert 'id="terms-accepted" type="checkbox" required' in page
     assert 'href="https://accessibleaudio.co.za/terms.html" target="_blank" rel="noopener"' in page
     assert 'formData.append("terms_accepted"' in app_js
-    assert 'formData.append("terms_version", "2026-07-16")' in app_js
+    assert 'formData.append("terms_version", "2026-07-18")' in app_js
+    assert "$termsVersion = '2026-07-18'" in process_file
     assert "Terms and conditions." in terms
     assert 'href="submit/"' in terms
     assert "bool_value('terms_accepted')" in process_file
@@ -506,7 +507,7 @@ def test_paid_payfast_notifications_are_verified_and_idempotent():
     assert "['uploaded', 'paid']" in endpoint
 
 
-def test_paid_orders_are_processed_server_side_into_downloadable_wav_chapters():
+def test_paid_orders_are_processed_server_side_into_downloadable_mp3_chapters():
     production = read("api/production.php")
     worker = read("api/process-queue.php")
     download = read("api/download-audio.php")
@@ -520,15 +521,36 @@ def test_paid_orders_are_processed_server_side_into_downloadable_wav_chapters():
     assert "chunk_speech_text" in production
     assert "generate_tts_chunk" in production
     assert "google/gemini-3.1-flash-tts-preview" in read("api/lib.php")
-    assert "join_pcm_chunks_as_wav" in production
-    assert "wav_header" in production
+    assert "join_pcm_chunks_as_mp3" in production
+    assert "encode_pcm_as_mp3" in production
+    assert "proc_open($command" in production
+    assert "'lame_binary'" in read("api/lib.php")
     assert "response_format' => 'pcm'" in production
     assert "completion_email_sent_at" in production
-    assert "Content-Type: audio/wav" in download
+    assert "audio/mpeg" in download
     assert "current_user($config)" in download
     assert "download_url" in user_files
     assert "data-download-audio" in user_app
     assert "outputs" in admin_files
+
+
+def test_mp3_is_the_only_delivery_format_and_is_explained_publicly():
+    submit_html = read("submit/index.html")
+    submit_js = read("submit/app.js")
+    faq = read("faq.html")
+    terms = read("terms.html")
+
+    assert "Output Format" not in submit_html
+    assert 'name="output-format"' not in submit_html
+    assert "chapter-ready MP3 files" in submit_html
+    assert 'formData.append("output_format", "mp3")' in submit_js
+    assert 'formData.append("also_wav", "false")' in submit_js
+    assert '"chapter.mp3"' in submit_js
+    assert "audioFormat(output.filename)" in submit_js
+    assert "Which audio format will I receive?" in faq
+    assert "there is no separate output-format choice" in faq
+    assert "Completed audiobooks are delivered as chapter-ready <strong>MP3 files</strong>" in terms
+    assert "Effective 18 July 2026" in terms
 
 
 def test_private_admin_queue_requires_configured_google_admin_and_secure_download():
@@ -616,6 +638,7 @@ def test_hostinger_deploy_script_uploads_submit_and_api_but_not_private_secrets(
     assert '"submit/styles.css"' in deploy_script
     assert 'Get-ChildItem -LiteralPath "api"' in deploy_script
     assert '"api/.htaccess"' in deploy_script
+    assert '"api/bin/.htaccess"' in deploy_script
     assert '"private_uploads/.htaccess"' in deploy_script
 
     assert '"api/config.local.php"' not in deploy_script

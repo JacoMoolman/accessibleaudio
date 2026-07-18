@@ -35,7 +35,7 @@ $records = array_map(static function (array $record): array {
             return [
                 'chapter' => $chapter,
                 'title' => $output['title'] ?? ('Chapter ' . $chapter),
-                'filename' => $output['filename'] ?? ('chapter-' . $chapter . '.wav'),
+                'filename' => $output['filename'] ?? ('chapter-' . $chapter . '.mp3'),
                 'bytes' => $output['bytes'] ?? 0,
                 'download_url' => '/api/download-audio.php?id=' . rawurlencode((string) ($record['id'] ?? '')) . '&chapter=' . $chapter,
             ];

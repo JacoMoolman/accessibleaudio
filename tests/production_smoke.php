@@ -26,17 +26,18 @@ if (!is_dir($temporaryDirectory)) {
 }
 $pcmOne = $temporaryDirectory . '/production-smoke-one.pcm';
 $pcmTwo = $temporaryDirectory . '/production-smoke-two.pcm';
-$joinedPath = $temporaryDirectory . '/production-smoke-joined.wav';
+$joinedPath = $temporaryDirectory . '/production-smoke-joined.mp3';
 file_put_contents($pcmOne, str_repeat(pack('v', 1200), 3000));
 file_put_contents($pcmTwo, str_repeat(pack('v', 2200), 3000));
-$result = join_pcm_chunks_as_wav([$pcmOne, $pcmTwo], $joinedPath);
-$wav = file_get_contents($joinedPath);
-assert_true($result['bytes'] === 12044, 'Joined WAV must contain its header and all PCM data');
-assert_true(substr($wav, 0, 4) === 'RIFF', 'Joined WAV must have a RIFF header');
-assert_true(substr($wav, 8, 4) === 'WAVE', 'Joined WAV must identify the WAVE format');
-assert_true(unpack('V', substr($wav, 24, 4))[1] === 24000, 'Joined WAV must use the provider sample rate');
-assert_true(unpack('v', substr($wav, 34, 2))[1] === 16, 'Joined WAV must contain 16-bit samples');
-assert_true(unpack('V', substr($wav, 40, 4))[1] === 12000, 'Joined WAV data length must match the PCM chunks');
+$testEncoder = static function (string $pcmPath, string $mp3Path): void {
+    assert_true(filesize($pcmPath) === 12000, 'All PCM chunks must be joined before encoding');
+    file_put_contents($mp3Path, "\xff\xfb\x90\x64" . str_repeat("\0", 2000));
+};
+$result = join_pcm_chunks_as_mp3([$pcmOne, $pcmTwo], $joinedPath, '/private/lame', $testEncoder);
+$mp3 = file_get_contents($joinedPath);
+assert_true($result['bytes'] === 2004, 'Encoded MP3 byte count must be recorded');
+assert_true($result['pcm_bytes'] === 12000, 'Joined PCM byte count must include every chunk');
+assert_true(ord($mp3[0]) === 0xff && (ord($mp3[1]) & 0xe0) === 0xe0, 'Output must have an MP3 frame signature');
 @unlink($pcmOne);
 @unlink($pcmTwo);
 @unlink($joinedPath);
@@ -46,4 +47,5 @@ echo json_encode([
     'chunks' => count($chunks),
     'joined_bytes' => $result['bytes'],
     'sample_rate' => $result['sample_rate'],
+    'bit_rate' => $result['bit_rate'],
 ], JSON_UNESCAPED_SLASHES) . PHP_EOL;

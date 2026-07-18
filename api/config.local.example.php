@@ -21,6 +21,7 @@ return [
     'PAYFAST_UNSIGNED_SANDBOX' => false,
     'OPENROUTER_API_KEY' => null,
     'OPENROUTER_TTS_MODEL' => 'google/gemini-3.1-flash-tts-preview',
+    'LAME_BINARY' => __DIR__ . '/bin/lame',
     'TTS_CHUNK_CHARACTERS' => 4500,
     'TTS_REQUEST_TIMEOUT' => 300,
     'WORKER_CHUNKS_PER_RUN' => 1,

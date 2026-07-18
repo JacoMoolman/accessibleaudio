@@ -12,6 +12,7 @@ out/
 .env.*
 !.env.example
 api/config.local.php
+api/bin/lame
 private_uploads/*
 !private_uploads/.htaccess
 

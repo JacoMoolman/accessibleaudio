@@ -42,8 +42,9 @@ $realPath = realpath($path);
 if (!$root || !$realPath || !str_starts_with($realPath, $root . DIRECTORY_SEPARATOR) || !is_file($realPath)) {
     json_error('Audiobook chapter file not found', 404);
 }
-$filename = safe_filename((string) ($output['filename'] ?? ('chapter-' . $chapterNumber . '.wav')));
-header('Content-Type: audio/wav');
+$filename = safe_filename((string) ($output['filename'] ?? ('chapter-' . $chapterNumber . '.mp3')));
+$extension = strtolower((string) pathinfo($filename, PATHINFO_EXTENSION));
+header('Content-Type: ' . ($extension === 'wav' ? 'audio/wav' : 'audio/mpeg'));
 header('Content-Disposition: attachment; filename="' . addcslashes($filename, "\"\\") . '"');
 header('Content-Length: ' . filesize($realPath));
 header('Cache-Control: private, no-store');

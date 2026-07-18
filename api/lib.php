@@ -75,6 +75,7 @@ function hostinger_config(): array
         'openrouter_api_key' => config_value($fileConfig, 'OPENROUTER_API_KEY', null),
         'openrouter_tts_model' => config_value($fileConfig, 'OPENROUTER_TTS_MODEL', 'google/gemini-3.1-flash-tts-preview'),
         'openrouter_tts_url' => config_value($fileConfig, 'OPENROUTER_TTS_URL', 'https://openrouter.ai/api/v1/audio/speech'),
+        'lame_binary' => config_value($fileConfig, 'LAME_BINARY', __DIR__ . '/bin/lame'),
         'tts_chunk_characters' => max(1000, min(12000, (int) config_value($fileConfig, 'TTS_CHUNK_CHARACTERS', 4500))),
         'tts_request_timeout' => max(30, min(330, (int) config_value($fileConfig, 'TTS_REQUEST_TIMEOUT', 300))),
         'worker_chunks_per_run' => max(1, min(10, (int) config_value($fileConfig, 'WORKER_CHUNKS_PER_RUN', 1))),
@@ -349,7 +350,7 @@ function build_options_text(array $record, array $options): string
         'narrator_voice: ' . ($options['narrator_voice'] ?: 'not selected'),
         'voice_type: ' . ($voicePricing['type_label'] ?? 'not selected'),
         'cost_per_word_cents: ' . ($voicePricing['cost_per_word_cents'] ?? 'not selected'),
-        'output_format: wav',
+        'output_format: mp3',
         'also_wav: false',
         'source_language: ' . ($options['source_language'] ?: 'not detected'),
         'detected_chapter_count: ' . count($options['chapter_titles']),
@@ -439,7 +440,12 @@ function production_voice_config(string $voice): ?array
 
 function production_configured(array $config): bool
 {
-    return !empty($config['openrouter_api_key']) && !empty($config['openrouter_tts_model']);
+    $encoder = (string) ($config['lame_binary'] ?? '');
+    return !empty($config['openrouter_api_key'])
+        && !empty($config['openrouter_tts_model'])
+        && $encoder !== ''
+        && is_file($encoder)
+        && is_executable($encoder);
 }
 
 function total_cost_cents(int $wordCount, string $narratorVoice, bool $alsoWav, bool $translate, bool $makeVideo): float

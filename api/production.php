@@ -286,45 +286,88 @@ function inspect_pcm_file(string $path): array
     return ['bytes' => $bytes, 'samples' => intdiv($bytes, 2)];
 }
 
-function wav_header(int $dataBytes, int $sampleRate = 24000, int $channels = 1, int $bitsPerSample = 16): string
+function inspect_mp3_file(string $path): array
 {
-    if ($dataBytes < 0 || $dataBytes > 0xffffffff - 36) {
-        throw new RuntimeException('The chapter audio is too large for a WAV file');
+    $bytes = filesize($path);
+    if ($bytes === false || $bytes < 1000) {
+        throw new RuntimeException('The MP3 chapter is incomplete');
     }
-    $blockAlign = intdiv($channels * $bitsPerSample, 8);
-    $byteRate = $sampleRate * $blockAlign;
-    return 'RIFF'
-        . pack('V', 36 + $dataBytes)
-        . 'WAVEfmt '
-        . pack('VvvVVvv', 16, 1, $channels, $sampleRate, $byteRate, $blockAlign, $bitsPerSample)
-        . 'data'
-        . pack('V', $dataBytes);
+    $header = file_get_contents($path, false, null, 0, 3);
+    $hasId3 = $header === 'ID3';
+    $hasFrameSync = is_string($header)
+        && strlen($header) >= 2
+        && ord($header[0]) === 0xff
+        && (ord($header[1]) & 0xe0) === 0xe0;
+    if (!$hasId3 && !$hasFrameSync) {
+        throw new RuntimeException('The encoder did not create a valid MP3 chapter');
+    }
+    return ['bytes' => $bytes];
 }
 
-function join_pcm_chunks_as_wav(array $paths, string $destination): array
+function encode_pcm_as_mp3(string $pcmPath, string $destination, string $binary): void
 {
-    $dataBytes = 0;
-    foreach ($paths as $path) {
-        $info = inspect_pcm_file($path);
-        $dataBytes += $info['bytes'];
+    if (!is_file($binary) || !is_executable($binary)) {
+        throw new RuntimeException('The private MP3 encoder is unavailable');
     }
-    $temporary = $destination . '.part';
-    $output = fopen($temporary, 'wb');
+    $command = [
+        $binary,
+        '--silent',
+        '-r',
+        '-s',
+        '24',
+        '--bitwidth',
+        '16',
+        '--signed',
+        '--little-endian',
+        '-m',
+        'm',
+        '-b',
+        '96',
+        $pcmPath,
+        $destination,
+    ];
+    $pipes = [];
+    $process = proc_open($command, [
+        0 => ['pipe', 'r'],
+        1 => ['pipe', 'w'],
+        2 => ['pipe', 'w'],
+    ], $pipes);
+    if (!is_resource($process)) {
+        throw new RuntimeException('Could not start the private MP3 encoder');
+    }
+    fclose($pipes[0]);
+    $stdout = stream_get_contents($pipes[1]);
+    $stderr = stream_get_contents($pipes[2]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+    $exitCode = proc_close($process);
+    if ($exitCode !== 0) {
+        @unlink($destination);
+        $detail = trim((string) ($stderr ?: $stdout));
+        throw new RuntimeException('MP3 encoding failed' . ($detail !== '' ? ': ' . substr($detail, 0, 300) : ''));
+    }
+}
+
+function join_pcm_chunks_as_mp3(array $paths, string $destination, string $binary, ?callable $encoder = null): array
+{
+    $pcmTemporary = $destination . '.pcm.part';
+    $mp3Temporary = $destination . '.part';
+    $output = fopen($pcmTemporary, 'wb');
     if (!$output) {
-        throw new RuntimeException('Could not create the chapter WAV');
+        throw new RuntimeException('Could not create the chapter audio');
     }
+    $pcmBytes = 0;
     try {
-        if (fwrite($output, wav_header($dataBytes)) !== 44) {
-            throw new RuntimeException('Could not write the chapter WAV header');
-        }
         foreach ($paths as $path) {
+            $info = inspect_pcm_file($path);
+            $pcmBytes += $info['bytes'];
             $input = fopen($path, 'rb');
             if (!$input) {
                 throw new RuntimeException('A chapter chunk could not be read');
             }
             try {
                 if (stream_copy_to_stream($input, $output) === false) {
-                    throw new RuntimeException('Could not write the chapter WAV');
+                    throw new RuntimeException('Could not assemble the chapter audio');
                 }
             } finally {
                 fclose($input);
@@ -333,16 +376,26 @@ function join_pcm_chunks_as_wav(array $paths, string $destination): array
     } finally {
         fclose($output);
     }
-    if (!rename($temporary, $destination)) {
-        @unlink($temporary);
-        throw new RuntimeException('Could not publish the chapter WAV');
+    try {
+        if ($encoder !== null) {
+            $encoder($pcmTemporary, $mp3Temporary);
+        } else {
+            encode_pcm_as_mp3($pcmTemporary, $mp3Temporary, $binary);
+        }
+        $info = inspect_mp3_file($mp3Temporary);
+        if (!rename($mp3Temporary, $destination)) {
+            throw new RuntimeException('Could not publish the chapter MP3');
+        }
+    } finally {
+        @unlink($pcmTemporary);
+        @unlink($mp3Temporary);
     }
     return [
-        'bytes' => filesize($destination),
-        'data_bytes' => $dataBytes,
+        'bytes' => $info['bytes'],
+        'pcm_bytes' => $pcmBytes,
         'sample_rate' => 24000,
         'channels' => 1,
-        'bits_per_sample' => 16,
+        'bit_rate' => 96000,
     ];
 }
 
@@ -350,7 +403,7 @@ function safe_chapter_filename(int $index, string $title): string
 {
     $slug = strtolower(trim((string) preg_replace('/[^A-Za-z0-9]+/', '-', $title), '-'));
     $slug = substr($slug ?: 'chapter', 0, 70);
-    return sprintf('%02d-%s.wav', $index, $slug);
+    return sprintf('%02d-%s.mp3', $index, $slug);
 }
 
 function finalize_production(array $config, string $uploadDir, array $record, array &$manifest): array
@@ -370,7 +423,7 @@ function finalize_production(array $config, string $uploadDir, array $record, ar
             $paths[] = $baseDir . '/' . $chunk['file'];
         }
         $filename = safe_chapter_filename($chapterIndex + 1, (string) $chapter['title']);
-        $result = join_pcm_chunks_as_wav($paths, $outputDir . '/' . $filename);
+        $result = join_pcm_chunks_as_mp3($paths, $outputDir . '/' . $filename, (string) $config['lame_binary']);
         $chapter['status'] = 'completed';
         $chapter['output_file'] = 'output/' . $filename;
         $outputs[] = [
@@ -411,7 +464,7 @@ function send_completion_email(array $config, string $uploadDir, array $record):
         'Book: ' . ($record['filename'] ?? 'Audiobook'),
         'Chapters: ' . count($record['outputs'] ?? []),
         '',
-        'Sign in to download your WAV chapter files:',
+        'Sign in to download your MP3 chapter files:',
         request_base_url($config) . '/submit/',
     ]);
     aa_send_smtp_email($config, (string) $record['user_email'], 'Your audiobook is ready: ' . ($record['filename'] ?? 'Audiobook'), $body);

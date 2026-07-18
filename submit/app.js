@@ -32,9 +32,6 @@ const VOICES_BY_LABEL = Object.fromEntries(
 const VOICE_SAMPLE_URLS = Object.fromEntries(
   VOICE_CATALOG.map((voice) => [voice.label, voice.sampleUrl])
 );
-const OPTION_COSTS_CENTS = {
-  also_wav: 2500,
-};
 let fileAnalysis = null;
 let currentVoiceSampleAudio = null;
 
@@ -146,7 +143,7 @@ uploadForm.addEventListener("submit", async (event) => {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("narrator_voice", document.getElementById("narrator-voice").value);
-  formData.append("output_format", "wav");
+  formData.append("output_format", "mp3");
   formData.append("also_wav", "false");
   formData.append("translate", "false");
   formData.append("translation_languages", "");
@@ -155,7 +152,7 @@ uploadForm.addEventListener("submit", async (event) => {
   formData.append("chapter_titles", JSON.stringify(fileAnalysis.chapters.map((chapter) => chapter.title)));
   formData.append("make_video", "false");
   formData.append("terms_accepted", document.getElementById("terms-accepted").checked ? "true" : "false");
-  formData.append("terms_version", "2026-07-16");
+  formData.append("terms_version", "2026-07-18");
 
   setStatus("Uploading...");
   try {
@@ -190,7 +187,7 @@ filesList.addEventListener("click", async (event) => {
   if (downloadButton && currentSession?.access_token) {
     await downloadAuthenticatedFile(
       downloadButton.dataset.downloadAudio,
-      downloadButton.dataset.filename || "chapter.wav",
+      downloadButton.dataset.filename || "chapter.mp3",
       downloadButton
     );
     return;
@@ -560,7 +557,7 @@ function renderFile(file) {
           type="button"
           data-download-audio="${escapeHtml(output.download_url)}"
           data-filename="${escapeHtml(output.filename)}"
-        >Download ${escapeHtml(output.title)} WAV</button>`).join("")}</div>`
+        >Download ${escapeHtml(output.title)} ${escapeHtml(audioFormat(output.filename))}</button>`).join("")}</div>`
     : "";
   return `
     <article class="file-row">
@@ -633,4 +630,9 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function audioFormat(filename) {
+  const extension = String(filename || "").match(/\.([a-z0-9]+)$/i)?.[1];
+  return extension ? extension.toUpperCase() : "audio";
 }

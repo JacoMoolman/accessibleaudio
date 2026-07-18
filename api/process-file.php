@@ -16,7 +16,7 @@ if (!payfast_configured($config)) {
 if (!production_configured($config)) {
     json_error('Audiobook production is temporarily unavailable. No book was uploaded. Please try again later.', 503);
 }
-$termsVersion = '2026-07-16';
+$termsVersion = '2026-07-18';
 if (!bool_value('terms_accepted') || !hash_equals($termsVersion, trim((string) ($_POST['terms_version'] ?? '')))) {
     json_error('You must agree to the current Terms and Conditions before uploading.', 400);
 }

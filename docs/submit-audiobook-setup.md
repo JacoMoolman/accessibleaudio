@@ -71,20 +71,28 @@ but no PayFast form is returned:
 'PAYFAST_NOTIFY_URL' => 'https://accessibleaudio.co.za/api/payfast-notify.php',
 ```
 
-## Automated WAV Production
+## Automated MP3 Production
 
 Paid cloud-voice orders are placed in a resumable local production queue. A
 Hostinger PHP cron job calls `api/process-queue.php`; each invocation generates
 one or more selected-voice PCM chunks through OpenRouter, stores progress in the
-private upload folder, and wraps completed chunks into one WAV per chapter.
+private upload folder, joins completed PCM chunks, and encodes one MP3 per chapter with the private LAME binary at `api/bin/lame`.
 The customer's browser does not perform production and may be closed after
 payment.
+
+The encoder is a server-local, statically linked Linux x86-64 LAME 3.100 binary
+and is intentionally ignored by Git. Build it from the official
+`lame-3.100.tar.gz` source (SHA-256
+`ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e`),
+upload it over the private FTPS deployment path, and set mode `0750`.
+`api/bin/.htaccess` prevents the binary from being downloaded over HTTP.
 
 Private server configuration:
 
 ```php
 'OPENROUTER_API_KEY' => 'server-only-key',
 'OPENROUTER_TTS_MODEL' => 'google/gemini-3.1-flash-tts-preview',
+'LAME_BINARY' => __DIR__ . '/bin/lame',
 'TTS_CHUNK_CHARACTERS' => 4500,
 'TTS_REQUEST_TIMEOUT' => 300,
 'WORKER_CHUNKS_PER_RUN' => 1,
@@ -100,11 +108,11 @@ php /home/USER/domains/accessibleaudio.co.za/public_html/api/process-queue.php
 Only PHP CLI may execute the worker. Direct web access is blocked by
 `api/.htaccess`. Finished chapter files remain under `private_uploads` and are
 served only through an authenticated download endpoint. The worker emails the
-uploading account after all chapter WAVs are ready.
+uploading account after all chapter MP3s are ready.
 
 The current speech-generation endpoint is not listed by OpenRouter as a Zero Data
 Retention endpoint. Manuscript chunks therefore pass through OpenRouter and
-xAI under their current provider data policies.
+the selected speech-model provider under their current data policies.
 
 ## Deploy
 

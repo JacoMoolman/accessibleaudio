@@ -202,6 +202,7 @@ $files = @(
   "scripts/voice-catalog.js",
   "scripts/voice-samples.js",
   "api/.htaccess",
+  "api/bin/.htaccess",
   "private_uploads/.htaccess"
 )
 
