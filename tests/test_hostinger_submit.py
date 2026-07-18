@@ -83,11 +83,14 @@ def test_voice_sample_controls_use_the_dark_site_palette():
     html = read("voice-samples.html")
     styles = read("styles.css")
 
-    assert "styles.css?v=20260715-voices4" in html
+    assert "styles.css?v=20260718-voicefit1" in html
     assert ".voice-card-actions button:focus-visible" in styles
     assert "#fffdf7" not in styles
     assert "background: rgba(7, 61, 53, 0.72);" in styles
     assert "background: var(--soft);" in styles
+    assert "grid-template-columns: repeat(2, minmax(0, 1fr));" in styles
+    assert ".voice-card-actions button {" in styles
+    assert "min-width: 0;" in styles
 
 
 def test_submit_narrator_sample_has_working_stop_control():
@@ -391,7 +394,7 @@ def test_sitewide_polish_is_deployed_and_respects_reduced_motion():
     assert 'class="home-page"' in public_pages["homepage"]
     assert "hero-signal" in public_pages["homepage"]
     for page in public_pages.values():
-        assert "styles.css?v=20260715-voices4" in page
+        assert "styles.css?v=20260718-voicefit1" in page
         assert "scripts/site-motion.js?v=20260715-motion2" in page
     assert "./styles.css?v=20260718-payfast1" in submit
     assert "../scripts/site-motion.js?v=20260715-motion2" in submit
