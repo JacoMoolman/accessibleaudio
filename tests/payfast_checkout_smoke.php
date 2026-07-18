@@ -11,6 +11,7 @@ $base = [
     'payfast_cancel_url' => 'https://accessibleaudio.co.za/submit/?payment=cancelled',
     'payfast_notify_url' => 'https://accessibleaudio.co.za/api/payfast-notify.php',
     'public_base_url' => 'https://accessibleaudio.co.za',
+    'admin_email' => 'merchant@example.com',
 ];
 $user = ['email' => 'sandbox@example.com'];
 $record = [
@@ -29,6 +30,14 @@ $sandbox = build_payfast_checkout($base, $user, $record, 1000, $options);
 if (!$sandbox || isset($sandbox['fields']['signature'])) {
     throw new RuntimeException('Shared sandbox checkout should omit the rejected signature.');
 }
+if (($sandbox['fields']['email_address'] ?? '') !== 'sandbox@example.com' || ($sandbox['requires_alternate_payer_email'] ?? true)) {
+    throw new RuntimeException('Normal customer checkout should retain its payer email.');
+}
+
+$merchant = build_payfast_checkout($base, ['email' => 'MERCHANT@example.com'], $record, 1000, $options);
+if (!$merchant || isset($merchant['fields']['email_address']) || !($merchant['requires_alternate_payer_email'] ?? false)) {
+    throw new RuntimeException('Merchant self-checkout must omit the PayFast payer email and request an alternate address.');
+}
 
 $live = $base;
 $live['payfast_sandbox'] = false;
@@ -37,6 +46,9 @@ $live['payfast_passphrase'] = 'private-live-passphrase';
 $signed = build_payfast_checkout($live, $user, $record, 1000, $options);
 if (!$signed || !preg_match('/^[a-f0-9]{32}$/', (string) ($signed['fields']['signature'] ?? ''))) {
     throw new RuntimeException('Live checkout must retain its PayFast signature.');
+}
+if (($signed['fields']['email_address'] ?? '') !== 'sandbox@example.com') {
+    throw new RuntimeException('Live customer checkout should retain its payer email.');
 }
 
 echo "PayFast checkout smoke test passed.\n";

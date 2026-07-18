@@ -474,13 +474,22 @@ function build_payfast_checkout(array $config, array $user, array $record, int $
     }
     $baseUrl = request_base_url($config);
     $amountCents = total_cost_cents($wordCount, $options['narrator_voice'], $options['also_wav'], $options['translate'], $options['make_video']);
+    $userEmail = strtolower(trim((string) ($user['email'] ?? '')));
+    $adminEmail = strtolower(trim((string) ($config['admin_email'] ?? '')));
+    $requiresAlternatePayerEmail = $userEmail !== ''
+        && $adminEmail !== ''
+        && hash_equals($adminEmail, $userEmail);
     $fields = [
         'merchant_id' => $config['payfast_merchant_id'],
         'merchant_key' => $config['payfast_merchant_key'],
         'return_url' => $config['payfast_return_url'] ?: $baseUrl . '/submit/?payment=success',
         'cancel_url' => $config['payfast_cancel_url'] ?: $baseUrl . '/submit/?payment=cancelled',
         'notify_url' => $config['payfast_notify_url'] ?: $baseUrl . '/api/payfast-notify.php',
-        'email_address' => $user['email'],
+    ];
+    if ($userEmail !== '' && !$requiresAlternatePayerEmail) {
+        $fields['email_address'] = $userEmail;
+    }
+    $fields += [
         'm_payment_id' => 'AA-' . $record['id'],
         'amount' => number_format($amountCents / 100, 2, '.', ''),
         'item_name' => substr($record['filename'] . ' audiobook', 0, 100),
@@ -497,6 +506,7 @@ function build_payfast_checkout(array $config, array $user, array $record, int $
         'form_action' => 'https://' . $host . '/eng/process',
         'amount_zar' => format_zar_cents($amountCents),
         'book_name' => $record['filename'],
+        'requires_alternate_payer_email' => $requiresAlternatePayerEmail,
         'fields' => $fields,
     ];
 }

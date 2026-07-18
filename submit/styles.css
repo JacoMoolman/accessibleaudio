@@ -508,6 +508,15 @@ h2 {
   color: rgba(255, 250, 241, 0.74);
 }
 
+.payment-payer-note {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 3px solid #f0c263;
+  background: rgba(240, 194, 99, 0.1);
+  color: #fffaf1;
+  line-height: 1.5;
+}
+
 .cost-estimate-panel ul {
   display: grid;
   gap: 8px;

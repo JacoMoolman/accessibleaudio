@@ -14,8 +14,8 @@ def test_hostinger_submit_frontend_uses_php_api_and_client_side_analysis():
     html = read("submit/index.html")
     app_js = read("submit/app.js")
 
-    assert 'href="./styles.css?v=20260717-production1"' in html
-    assert 'src="./app.js?v=20260718-mp31"' in html
+    assert 'href="./styles.css?v=20260718-payfast1"' in html
+    assert 'src="./app.js?v=20260718-payfast1"' in html
     assert 'fetchJson("/api/config.php")' in app_js
     assert 'fetchJson("/api/process-file.php"' in app_js
     assert 'fetchJson("/api/files.php"' in app_js
@@ -97,8 +97,8 @@ def test_submit_narrator_sample_has_working_stop_control():
 
     assert 'id="play-narrator-sample"' in page
     assert 'id="stop-narrator-sample" disabled' in page
-    assert "styles.css?v=20260717-production1" in page
-    assert "app.js?v=20260718-mp31" in page
+    assert "styles.css?v=20260718-payfast1" in page
+    assert "app.js?v=20260718-payfast1" in page
     assert 'getElementById("stop-narrator-sample")' in app_js
     assert "stopNarratorSampleButton.disabled = false" in app_js
     assert "audio.pause()" in app_js
@@ -136,6 +136,18 @@ def test_existing_upload_rows_do_not_show_a_secondary_pay_button():
     assert "Pay now" not in app_js
     assert "renderPaymentCheckout(data.payment)" in app_js
     assert "Pay with PayFast" in app_js
+
+
+def test_payfast_self_payment_asks_for_an_alternate_payer_email():
+    page = read("submit/index.html")
+    app_js = read("submit/app.js")
+    lib_php = read("api/lib.php")
+
+    assert 'id="payment-payer-note"' in page
+    assert "PayFast does not allow the merchant account to pay itself" in page
+    assert "payment.requires_alternate_payer_email" in app_js
+    assert "requires_alternate_payer_email" in lib_php
+    assert "if ($userEmail !== '' && !$requiresAlternatePayerEmail)" in lib_php
 
 
 def test_submission_requires_versioned_terms_and_links_to_full_page():
@@ -381,7 +393,7 @@ def test_sitewide_polish_is_deployed_and_respects_reduced_motion():
     for page in public_pages.values():
         assert "styles.css?v=20260715-voices4" in page
         assert "scripts/site-motion.js?v=20260715-motion2" in page
-    assert "./styles.css?v=20260717-production1" in submit
+    assert "./styles.css?v=20260718-payfast1" in submit
     assert "../scripts/site-motion.js?v=20260715-motion2" in submit
     assert '"scripts/site-motion.js"' in deploy
     assert "document.body" in motion

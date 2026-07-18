@@ -21,6 +21,7 @@ const costEstimateBreakdown = document.getElementById("cost-estimate-breakdown")
 const paymentPanel = document.getElementById("payment-panel");
 const paymentAmount = document.getElementById("payment-amount");
 const paymentBook = document.getElementById("payment-book");
+const paymentPayerNote = document.getElementById("payment-payer-note");
 const payfastForm = document.getElementById("payfast-form");
 const filesList = document.getElementById("files-list");
 const playNarratorSampleButton = document.getElementById("play-narrator-sample");
@@ -376,6 +377,7 @@ function renderPaymentCheckout(payment) {
   payfastForm.removeAttribute("action");
   paymentAmount.textContent = "R 0.00";
   paymentBook.textContent = "";
+  paymentPayerNote.hidden = true;
   delete paymentPanel.dataset.uploadId;
   paymentPanel.hidden = true;
   if (!payment?.form_action || !payment?.fields) {
@@ -385,6 +387,7 @@ function renderPaymentCheckout(payment) {
   payfastForm.action = payment.form_action;
   paymentAmount.textContent = payment.amount_zar || payment.fields.amount || "R 0.00";
   paymentBook.textContent = payment.book_name || payment.fields.item_name || "";
+  paymentPayerNote.hidden = !payment.requires_alternate_payer_email;
   paymentPanel.dataset.uploadId = payment.fields.custom_str1 || "";
   Object.entries(payment.fields).forEach(([name, value]) => {
     const input = document.createElement("input");
