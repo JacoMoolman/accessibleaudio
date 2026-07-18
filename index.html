@@ -25,6 +25,39 @@
       content="Accessible Audio helps publishers, schools, and education teams create locally produced AI audiobook editions with South African language support."
     >
     <meta name="twitter:image" content="https://accessibleaudio.co.za/assets/aa-photo-hero.webp">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://accessibleaudio.co.za/#website",
+            "url": "https://accessibleaudio.co.za/",
+            "name": "Accessible Audio",
+            "description": "Locally produced AI audiobook editions with South African language support.",
+            "publisher": { "@id": "https://accessibleaudio.co.za/#organization" },
+            "inLanguage": "en-ZA"
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://accessibleaudio.co.za/#organization",
+            "name": "Accessible Audio",
+            "url": "https://accessibleaudio.co.za/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://accessibleaudio.co.za/assets/accessible-audio-logo-round-1024.png",
+              "width": 1024,
+              "height": 1024
+            },
+            "description": "Accessible Audio creates locally produced AI audiobook editions for publishers, schools, libraries, and education teams.",
+            "areaServed": {
+              "@type": "Country",
+              "name": "South Africa"
+            }
+          }
+        ]
+      }
+    </script>
     <link rel="icon" href="favicon.svg?v=20260612-private" type="image/svg+xml">
     <link rel="preload" href="assets/accessible-audio-logo-round.svg?v=20260624-logo1" as="image">
     <link rel="preload" href="assets/accessible-audio-hero.png?v=20260607-no-mic" as="image">
@@ -33,7 +66,7 @@
   </head>
   <body class="home-page">
     <header class="site-header" aria-label="Primary navigation">
-      <a class="brand" href="index.html" aria-label="Accessible Audio home">
+      <a class="brand" href="/" aria-label="Accessible Audio home">
         <span class="brand-mark" aria-hidden="true"></span>
         Accessible Audio
       </a>
@@ -45,6 +78,7 @@
         <a href="voice-samples.html">Voice samples</a>
         <a href="faq.html">FAQ</a>
         <a href="contact.html">Contact</a>
+        <a href="submit/">Submit</a>
       </nav>
     </header>
 

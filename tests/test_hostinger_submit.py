@@ -1,3 +1,4 @@
+import json
 import re
 from pathlib import Path
 
@@ -418,6 +419,44 @@ def test_faq_is_public_and_linked_from_the_site():
     submit_pages = [read("submit/index.html"), read("frontend/index.html")]
     for page in submit_pages:
         assert '<a href="https://accessibleaudio.co.za/faq.html">FAQ</a>' in page
+
+
+def test_public_search_indexing_signals_are_canonical_and_complete():
+    homepage = read("index.html")
+    submit = read("submit/index.html")
+    sitemap = read("sitemap.xml")
+    htaccess = read(".htaccess")
+
+    json_ld_match = re.search(
+        r'<script type="application/ld\+json">\s*(.*?)\s*</script>',
+        homepage,
+        flags=re.DOTALL,
+    )
+    assert json_ld_match is not None
+    structured_data = json.loads(json_ld_match.group(1))
+    types = {item["@type"] for item in structured_data["@graph"]}
+    assert types == {"WebSite", "Organization"}
+    assert structured_data["@graph"][0]["url"] == "https://accessibleaudio.co.za/"
+
+    assert '<link rel="canonical" href="https://accessibleaudio.co.za/submit/">' in submit
+    assert '<meta name="description"' in submit
+    assert '<meta property="og:url" content="https://accessibleaudio.co.za/submit/">' in submit
+    assert '<meta name="twitter:card" content="summary_large_image">' in submit
+    assert "<loc>https://accessibleaudio.co.za/submit/</loc>" in sitemap
+    assert "RewriteRule ^index\\.html$ https://accessibleaudio.co.za/ [R=301,L]" in htaccess
+    assert "RewriteCond %{HTTP_HOST} ^www\\.accessibleaudio\\.co\\.za$ [NC]" in htaccess
+
+    for page_path in (
+        "index.html",
+        "audiobooks.html",
+        "contact.html",
+        "faq.html",
+        "terms.html",
+        "voice-samples.html",
+    ):
+        page = read(page_path)
+        assert 'href="index.html' not in page
+        assert '<a href="submit/">Submit</a>' in page
 
 
 def test_all_public_headers_label_the_library_as_sample_audiobooks():

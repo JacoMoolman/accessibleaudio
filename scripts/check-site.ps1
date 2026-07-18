@@ -9,6 +9,7 @@ $termsPath = Join-Path $root "terms.html"
 $voiceSamplesPath = Join-Path $root "voice-samples.html"
 $robotsPath = Join-Path $root "robots.txt"
 $sitemapPath = Join-Path $root "sitemap.xml"
+$rootHtaccessPath = Join-Path $root ".htaccess"
 $stylesPath = Join-Path $root "styles.css"
 $faviconPath = Join-Path $root "favicon.svg"
 $logoSvgPath = Join-Path $root "assets\accessible-audio-logo-round.svg"
@@ -76,6 +77,7 @@ Assert-FileExists $termsPath
 Assert-FileExists $voiceSamplesPath
 Assert-FileExists $robotsPath
 Assert-FileExists $sitemapPath
+Assert-FileExists $rootHtaccessPath
 Assert-FileExists $stylesPath
 Assert-FileExists $faviconPath
 Assert-FileExists $logoSvgPath
@@ -103,6 +105,7 @@ $terms = Get-Content -LiteralPath $termsPath -Raw
 $voiceSamples = Get-Content -LiteralPath $voiceSamplesPath -Raw
 $robots = Get-Content -LiteralPath $robotsPath -Raw
 $sitemap = Get-Content -LiteralPath $sitemapPath -Raw
+$rootHtaccess = Get-Content -LiteralPath $rootHtaccessPath -Raw
 $styles = Get-Content -LiteralPath $stylesPath -Raw
 $deploy = Get-Content -LiteralPath $deployPath -Raw
 $videoScript = Get-Content -LiteralPath $videoScriptPath -Raw
@@ -125,6 +128,10 @@ Assert-Contains $index '<link rel="canonical" href="https://accessibleaudio.co.z
 Assert-Contains $index '<meta property="og:url" content="https://accessibleaudio.co.za/">' "homepage"
 Assert-Contains $index '<meta property="og:title" content="Accessible Audio | Locally Run AI Audiobooks">' "homepage"
 Assert-Contains $index '<meta name="twitter:card" content="summary_large_image">' "homepage"
+Assert-Contains $index '"@type": "WebSite"' "homepage structured data"
+Assert-Contains $index '"@type": "Organization"' "homepage structured data"
+Assert-Contains $index 'https://accessibleaudio.co.za/assets/accessible-audio-logo-round-1024.png' "homepage structured data"
+Assert-Contains $index '<a href="submit/">Submit</a>' "homepage navigation"
 Assert-Contains $index "audiobooks.html" "homepage"
 Assert-Contains $index '>Sample AudioBooks</a>' "homepage navigation"
 Assert-Contains $audiobooks '>Sample AudioBooks</a>' "audiobook library navigation"
@@ -240,6 +247,11 @@ Assert-Contains $submitApp 'data-delete-upload' "submit script"
 Assert-NotContains $submitApp '/api/payment.php' "submit script"
 Assert-NotContains $submitApp 'data-pay-upload' "submit script"
 Assert-Contains $submitIndex "../scripts/site-motion.js?v=20260715-motion2" "submit page"
+Assert-Contains $submitIndex '<meta name="description" content="Submit a plain-text manuscript to Accessible Audio for secure AI audiobook production and a PayFast cost estimate.">' "submit page"
+Assert-Contains $submitIndex '<link rel="canonical" href="https://accessibleaudio.co.za/submit/">' "submit page"
+Assert-Contains $submitIndex '<meta property="og:url" content="https://accessibleaudio.co.za/submit/">' "submit page"
+Assert-Contains $submitIndex '<meta name="twitter:card" content="summary_large_image">' "submit page"
+Assert-Contains $submitIndex '<a href="https://accessibleaudio.co.za/submit/" aria-current="page">Submit</a>' "submit page navigation"
 Assert-NotContains $submitIndex "The numbers match the" "submit page"
 Assert-Contains $submitIndex "Automated Grok voices: 0.75c/word." "submit page"
 Assert-Contains $submitIndex 'id="terms-accepted" type="checkbox" required' "submit page"
@@ -249,6 +261,7 @@ Assert-Contains $submitApp 'formData.append("terms_version", "2026-07-16")' "sub
 Assert-Contains $terms "Terms and conditions." "terms page"
 Assert-Contains $terms 'href="submit/"' "terms page"
 Assert-Contains $sitemap "https://accessibleaudio.co.za/terms.html" "sitemap"
+Assert-Contains $sitemap "https://accessibleaudio.co.za/submit/" "sitemap"
 Assert-Contains $deploy '"terms.html"' "deployment script"
 Assert-Contains $submitIndex 'href="https://accessibleaudio.co.za/voice-samples.html">Voice samples</a>' "submit page"
 Assert-Contains $submitApp "VOICE_CATALOG.map" "submit app"
@@ -360,6 +373,13 @@ Assert-Contains $sitemap "<loc>https://accessibleaudio.co.za/audiobooks.html</lo
 Assert-Contains $sitemap "<loc>https://accessibleaudio.co.za/contact.html</loc>" "sitemap.xml"
 Assert-Contains $sitemap "<loc>https://accessibleaudio.co.za/voice-samples.html</loc>" "sitemap.xml"
 Assert-Contains $sitemap "<loc>https://accessibleaudio.co.za/faq.html</loc>" "sitemap.xml"
+Assert-Contains $sitemap "<loc>https://accessibleaudio.co.za/submit/</loc>" "sitemap.xml"
+Assert-Contains $rootHtaccess 'RewriteRule ^index\.html$ https://accessibleaudio.co.za/' "root redirect rules"
+Assert-Contains $rootHtaccess 'RewriteCond %{HTTP_HOST} ^www\.accessibleaudio\.co\.za$' "root redirect rules"
+
+foreach ($page in @($index, $audiobooks, $contact, $faq, $terms, $voiceSamples)) {
+  Assert-NotContains $page 'href="index.html' "canonical public navigation"
+}
 
 Assert-NotContains $index "youtube.com/watch" "homepage"
 Assert-NotContains $audiobooks "youtube.com/watch" "audiobook library"
