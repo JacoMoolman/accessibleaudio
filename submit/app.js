@@ -547,6 +547,31 @@ async function loadFiles() {
     return;
   }
   filesList.innerHTML = files.map(renderFile).join("");
+  if (paymentPanel.hidden) {
+    const pendingUpload = files.find((file) => file.status === "uploaded");
+    if (pendingUpload?.id) {
+      await restorePendingPaymentCheckout(pendingUpload.id);
+    }
+  }
+}
+
+async function restorePendingPaymentCheckout(uploadId) {
+  try {
+    const data = await fetchJson("/api/payment.php", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${currentSession.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ upload_id: uploadId }),
+    });
+    renderPaymentCheckout(data.payment);
+    if (!paymentPanel.hidden) {
+      setStatus("PayFast checkout is ready.");
+    }
+  } catch (error) {
+    setStatus(`The upload is saved, but checkout could not be restored: ${error.message}`, true);
+  }
 }
 
 function renderFile(file) {
