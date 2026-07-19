@@ -22,6 +22,7 @@ $voiceCatalogScriptPath = Join-Path $root "scripts\voice-catalog.js"
 $voiceSamplesScriptPath = Join-Path $root "scripts\voice-samples.js"
 $submitIndexPath = Join-Path $root "submit\index.html"
 $submitAppPath = Join-Path $root "submit\app.js"
+$submitStylesPath = Join-Path $root "submit\styles.css"
 $adminIndexPath = Join-Path $root "admin\index.html"
 $adminAppPath = Join-Path $root "admin\app.js"
 $adminStylesPath = Join-Path $root "admin\styles.css"
@@ -90,6 +91,7 @@ Assert-FileExists $voiceCatalogScriptPath
 Assert-FileExists $voiceSamplesScriptPath
 Assert-FileExists $submitIndexPath
 Assert-FileExists $submitAppPath
+Assert-FileExists $submitStylesPath
 Assert-FileExists $adminIndexPath
 Assert-FileExists $adminAppPath
 Assert-FileExists $adminStylesPath
@@ -115,6 +117,7 @@ $voiceCatalogScript = Get-Content -LiteralPath $voiceCatalogScriptPath -Raw
 $voiceSamplesScript = Get-Content -LiteralPath $voiceSamplesScriptPath -Raw
 $submitIndex = Get-Content -LiteralPath $submitIndexPath -Raw
 $submitApp = Get-Content -LiteralPath $submitAppPath -Raw
+$submitStyles = Get-Content -LiteralPath $submitStylesPath -Raw
 $adminIndex = Get-Content -LiteralPath $adminIndexPath -Raw
 $adminApp = Get-Content -LiteralPath $adminAppPath -Raw
 $adminStyles = Get-Content -LiteralPath $adminStylesPath -Raw
@@ -239,14 +242,18 @@ Assert-Contains $voiceCatalogScript "const costPerWordCents = 0.75" "voice catal
 Assert-Contains $voiceCatalogScript "/assets/voice-samples/catalog/voice-" "voice catalog script"
 Assert-Contains $voiceSamplesScript "window.ACCESSIBLE_AUDIO_VOICES" "voice sample script"
 Assert-Contains $submitIndex "../scripts/voice-catalog.js?v=20260719-voice1" "submit page"
-Assert-Contains $submitIndex "./styles.css?v=20260718-payfast1" "submit page"
-Assert-Contains $submitIndex "./app.js?v=20260719-payfast3" "submit page"
+Assert-Contains $submitIndex "./styles.css?v=20260719-status1" "submit page"
+Assert-Contains $submitIndex "./app.js?v=20260719-status1" "submit page"
 Assert-Contains $submitIndex "PayFast does not allow the merchant account to pay itself" "submit page"
 Assert-Contains $submitIndex 'id="stop-narrator-sample" disabled' "submit page"
 Assert-Contains $submitApp '/api/delete-file.php' "submit script"
 Assert-Contains $submitApp 'data-delete-upload' "submit script"
 Assert-Contains $submitApp '/api/payment.php' "submit script"
 Assert-Contains $submitApp 'restorePendingPaymentCheckout' "submit script"
+Assert-Contains $submitApp 'Payment submitted. Waiting for secure confirmation from PayFast. Do not pay again.' "submit script"
+Assert-Contains $submitApp 'Payment confirmed' "submit script"
+Assert-Contains $submitApp 'We will email you when the MP3 chapters are ready.' "submit script"
+Assert-Contains $submitStyles '.production-status' "submit stylesheet"
 Assert-NotContains $submitApp 'data-pay-upload' "submit script"
 Assert-Contains $submitIndex "../scripts/site-motion.js?v=20260715-motion2" "submit page"
 Assert-Contains $submitIndex '<meta name="description" content="Submit a plain-text manuscript to Accessible Audio for secure AI audiobook production and a PayFast cost estimate.">' "submit page"

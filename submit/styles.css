@@ -756,6 +756,23 @@ button.ghost {
   gap: 10px;
 }
 
+.production-status {
+  flex: 1 0 100%;
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--gold);
+  border-radius: 4px;
+  background: rgba(240, 194, 99, 0.1);
+}
+
+.production-status strong { color: var(--ink); }
+.production-status span { color: var(--muted); line-height: 1.5; }
+.production-status--confirmed,
+.production-status--processing,
+.production-status--complete { border-left-color: var(--green); background: rgba(111, 241, 220, 0.1); }
+.production-status--error { border-left-color: #ff8e82; background: rgba(176, 48, 39, 0.18); }
+
 .chapter-downloads {
   display: flex;
   flex-wrap: wrap;

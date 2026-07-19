@@ -31,7 +31,7 @@ if ($ownerId === '') {
     json_error('Upload owner is missing', 409);
 }
 
-$deleted = delete_upload_record($uploadDir, $ownerId, $uploadId);
+$deleted = delete_upload_record($uploadDir, $ownerId, $uploadId, (string) $user['id'], 'admin');
 if ($deleted === null) {
     json_error('Upload not found', 404);
 }

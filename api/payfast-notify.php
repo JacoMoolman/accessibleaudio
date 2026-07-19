@@ -16,7 +16,7 @@ if (!payfast_configured($config) || empty($config['admin_email'])) {
 $payload = [];
 foreach ($_POST as $key => $value) {
     if (is_string($key) && !is_array($value)) {
-        $payload[$key] = trim((string) $value);
+        $payload[$key] = stripslashes((string) $value);
     }
 }
 payfast_itn_audit($config, 'received', $payload);
@@ -179,36 +179,19 @@ function payfast_itn_audit(array $config, string $stage, array $payload): void
         'amount_gross' => (string) ($payload['amount_gross'] ?? ''),
         'signature_present' => !empty($payload['signature']),
         'signature_length' => strlen((string) ($payload['signature'] ?? '')),
+        'field_order' => array_keys($payload),
     ];
     $path = rtrim(ensure_upload_dir($config), '/\\') . '/payfast-itn-audit.jsonl';
     @file_put_contents($path, json_encode($entry, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND | LOCK_EX);
 }
 
-function payfast_notification_signature(array $payload, string $passphrase): string
-{
-    $parts = [];
-    foreach ($payload as $key => $value) {
-        if ($key === 'signature') {
-            continue;
-        }
-        if ($value !== '') {
-            $parts[] = $key . '=' . urlencode(trim((string) $value));
-        }
-    }
-    if (trim($passphrase) !== '') {
-        $parts[] = 'passphrase=' . urlencode(trim($passphrase));
-    }
-    return md5(implode('&', $parts));
-}
-
 function payfast_server_validation(array $payload, bool $sandbox): bool
 {
-    unset($payload['signature']);
     $host = $sandbox ? 'sandbox.payfast.co.za' : 'www.payfast.co.za';
     $curl = curl_init('https://' . $host . '/eng/query/validate');
     curl_setopt_array($curl, [
         CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => http_build_query($payload),
+        CURLOPT_POSTFIELDS => payfast_notification_parameter_string($payload),
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 20,
         CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded'],

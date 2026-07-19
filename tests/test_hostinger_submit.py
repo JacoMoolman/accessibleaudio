@@ -14,8 +14,8 @@ def test_hostinger_submit_frontend_uses_php_api_and_client_side_analysis():
     html = read("submit/index.html")
     app_js = read("submit/app.js")
 
-    assert 'href="./styles.css?v=20260718-payfast1"' in html
-    assert 'src="./app.js?v=20260719-payfast3"' in html
+    assert 'href="./styles.css?v=20260719-status1"' in html
+    assert 'src="./app.js?v=20260719-status1"' in html
     assert 'fetchJson("/api/config.php")' in app_js
     assert 'fetchJson("/api/process-file.php"' in app_js
     assert 'fetchJson("/api/files.php"' in app_js
@@ -100,8 +100,8 @@ def test_submit_narrator_sample_has_working_stop_control():
 
     assert 'id="play-narrator-sample"' in page
     assert 'id="stop-narrator-sample" disabled' in page
-    assert "styles.css?v=20260718-payfast1" in page
-    assert "app.js?v=20260719-payfast3" in page
+    assert "styles.css?v=20260719-status1" in page
+    assert "app.js?v=20260719-status1" in page
     assert 'getElementById("stop-narrator-sample")' in app_js
     assert "stopNarratorSampleButton.disabled = false" in app_js
     assert "audio.pause()" in app_js
@@ -123,7 +123,10 @@ def test_uploads_can_be_deleted_and_status_badge_stays_readable():
     assert '$_SERVER[\'REQUEST_METHOD\'] !== \'POST\'' in delete_endpoint
     assert "current_user($config)" in delete_endpoint
     assert "delete_upload_record" in delete_endpoint
-    assert "delete_upload_record(string $uploadDir, string $userId, string $uploadId)" in php_lib
+    assert "function delete_upload_record(" in php_lib
+    assert "$record['status'] = 'deleted'" in php_lib
+    assert "$record['status_before_deletion']" in php_lib
+    assert "$record['deleted_at']" in php_lib
     assert "hash('sha256', $userId)" in php_lib
     assert "delete_private_tree" in php_lib
     assert ".submit-section .file-row .badge" in submit_styles
@@ -135,12 +138,26 @@ def test_existing_upload_rows_restore_primary_checkout_without_a_secondary_butto
     app_js = read("submit/app.js")
 
     assert 'fetchJson("/api/payment.php"' in app_js
-    assert 'files.find((file) => file.status === "uploaded")' in app_js
+    assert 'files.find((file) => file.status === "uploaded" && file.id !== submittedPaymentId)' in app_js
     assert "restorePendingPaymentCheckout" in app_js
     assert "data-pay-upload" not in app_js
     assert "Pay now" not in app_js
     assert "renderPaymentCheckout(data.payment)" in app_js
     assert "Pay with PayFast" in app_js
+
+
+def test_payfast_return_shows_confirmation_and_processing_state_without_repayment():
+    app_js = read("submit/app.js")
+    styles = read("submit/styles.css")
+
+    assert 'get("payment")' in app_js
+    assert 'if (paymentReturnState !== "success") return;' in app_js
+    assert "Payment submitted. Waiting for secure confirmation from PayFast. Do not pay again." in app_js
+    assert "Payment confirmed" in app_js
+    assert "We will email you when the MP3 chapters are ready." in app_js
+    assert "completion_email_sent_at" in app_js
+    assert "fileStatusCopy(file)" in app_js
+    assert ".production-status" in styles
 
 
 def test_primary_payfast_form_uses_native_navigation_and_keeps_terms_accepted():
@@ -416,7 +433,7 @@ def test_sitewide_polish_is_deployed_and_respects_reduced_motion():
     for page in public_pages.values():
         assert "styles.css?v=20260718-voicefit1" in page
         assert "scripts/site-motion.js?v=20260715-motion2" in page
-    assert "./styles.css?v=20260718-payfast1" in submit
+    assert "./styles.css?v=20260719-status1" in submit
     assert "../scripts/site-motion.js?v=20260715-motion2" in submit
     assert '"scripts/site-motion.js"' in deploy
     assert "document.body" in motion
@@ -522,8 +539,10 @@ def test_paid_payfast_notifications_are_verified_and_idempotent():
 
     assert "payfast_notification_signature" in endpoint
     assert "!payfast_uses_unsigned_shared_sandbox($config)" in endpoint
-    assert "if ($key === 'signature')" in endpoint
-    assert "continue;" in endpoint[endpoint.index("function payfast_notification_signature"):]
+    assert "function payfast_notification_parameter_string" in php_lib
+    assert "if ($key === 'signature')" in php_lib
+    assert "break;" in php_lib[php_lib.index("function payfast_notification_parameter_string"):]
+    assert "payfast_notification_parameter_string($payload)" in endpoint
     assert "payfast_server_validation" in endpoint
     assert "payfast_itn_audit" in endpoint
     assert "signature_mismatch" in endpoint
@@ -617,7 +636,7 @@ def test_private_admin_queue_requires_configured_google_admin_and_secure_downloa
     assert "find_upload_record_any" in download
     assert "require_admin($config, $user)" in admin_delete
     assert "find_upload_record_any" in admin_delete
-    assert "delete_upload_record($uploadDir, $ownerId, $uploadId)" in admin_delete
+    assert "delete_upload_record($uploadDir, $ownerId, $uploadId, (string) $user['id'], 'admin')" in admin_delete
     assert "Wait for production to finish" in admin_delete
     assert "Content-Disposition: attachment" in download
     assert "str_starts_with($realPath, $root . DIRECTORY_SEPARATOR)" in download

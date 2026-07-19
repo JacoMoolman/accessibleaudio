@@ -16,7 +16,11 @@ if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0
 }
 
 $uploadDir = ensure_upload_dir($config);
-$deleted = delete_upload_record($uploadDir, $user['id'], $uploadId);
+$record = find_upload_record($uploadDir, $user['id'], $uploadId);
+if ($record !== null && ($record['status'] ?? '') === 'processing') {
+    json_error('Wait for production to finish before deleting this book', 409);
+}
+$deleted = delete_upload_record($uploadDir, $user['id'], $uploadId, $user['id'], 'user');
 if ($deleted === null) {
     json_error('Upload not found', 404);
 }

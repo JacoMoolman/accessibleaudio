@@ -35,6 +35,9 @@ const VOICE_SAMPLE_URLS = Object.fromEntries(
 );
 let fileAnalysis = null;
 let currentVoiceSampleAudio = null;
+let paymentReturnState = new URLSearchParams(window.location.search).get("payment");
+let paymentReturnHandled = false;
+const PENDING_PAYMENT_STORAGE_KEY = "accessibleAudioPendingPayFastUpload";
 
 populateNarratorVoices();
 init();
@@ -62,7 +65,7 @@ async function init() {
       config.supabaseAnonKey
     );
     const { data } = await supabaseClient.auth.getSession();
-    setSession(data.session);
+    await setSession(data.session);
 
     supabaseClient.auth.onAuthStateChange((_event, session) => {
       setSession(session);
@@ -182,7 +185,7 @@ uploadForm.addEventListener("submit", async (event) => {
   }
 });
 
-refreshFilesButton.addEventListener("click", loadFiles);
+refreshFilesButton.addEventListener("click", () => loadFiles());
 
 filesList.addEventListener("click", async (event) => {
   const downloadButton = event.target.closest("[data-download-audio]");
@@ -231,7 +234,10 @@ payfastForm.addEventListener("submit", (event) => {
   if (!payfastForm.getAttribute("action")) {
     event.preventDefault();
     setStatus("Upload a book before paying.", true);
+    return;
   }
+  sessionStorage.setItem(PENDING_PAYMENT_STORAGE_KEY, paymentPanel.dataset.uploadId || "");
+  setStatus("Opening PayFast. After payment, return here for confirmation and processing status.");
 });
 
 async function analyzeSelectedFile() {
@@ -531,11 +537,15 @@ async function setSession(session) {
     ? `Logged in as ${session.user.email || session.user.id}`
     : "Use your Google account to keep your manuscripts and production choices together.";
   if (loggedIn) {
-    await loadFiles();
+    const files = await loadFiles();
+    if (!paymentReturnHandled && paymentReturnState) {
+      paymentReturnHandled = true;
+      await handlePaymentReturn(files);
+    }
   }
 }
 
-async function loadFiles() {
+async function loadFiles({ restoreCheckout = true } = {}) {
   if (!currentSession?.access_token) return;
   const files = await fetchJson("/api/files.php", {
     headers: {
@@ -544,15 +554,75 @@ async function loadFiles() {
   });
   if (!files.length) {
     filesList.innerHTML = `<p class="empty">No uploads yet.</p>`;
-    return;
+    return files;
   }
   filesList.innerHTML = files.map(renderFile).join("");
-  if (paymentPanel.hidden) {
-    const pendingUpload = files.find((file) => file.status === "uploaded");
+  let submittedPaymentId = sessionStorage.getItem(PENDING_PAYMENT_STORAGE_KEY);
+  const submittedRecord = files.find((file) => file.id === submittedPaymentId);
+  if (submittedRecord && submittedRecord.status !== "uploaded") {
+    sessionStorage.removeItem(PENDING_PAYMENT_STORAGE_KEY);
+    submittedPaymentId = null;
+  }
+  if (restoreCheckout && paymentPanel.hidden && paymentReturnState !== "success") {
+    const pendingUpload = files.find((file) => file.status === "uploaded" && file.id !== submittedPaymentId);
     if (pendingUpload?.id) {
       await restorePendingPaymentCheckout(pendingUpload.id);
     }
   }
+  return files;
+}
+
+async function handlePaymentReturn(initialFiles) {
+  if (paymentReturnState === "cancelled") {
+    sessionStorage.removeItem(PENDING_PAYMENT_STORAGE_KEY);
+    setStatus("Payment was cancelled. Your uploaded book is saved and you can try again when ready.");
+    clearPaymentReturnQuery();
+    return;
+  }
+  if (paymentReturnState !== "success") return;
+
+  renderPaymentCheckout(null);
+  const submittedPaymentId = sessionStorage.getItem(PENDING_PAYMENT_STORAGE_KEY);
+  let files = Array.isArray(initialFiles) ? initialFiles : [];
+  let submittedFile = findSubmittedPaymentFile(files, submittedPaymentId);
+  if (submittedFile && submittedFile.status !== "uploaded") {
+    showConfirmedPayment(submittedFile);
+    return;
+  }
+
+  setStatus("Payment submitted. Waiting for secure confirmation from PayFast. Do not pay again.");
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    await new Promise((resolve) => window.setTimeout(resolve, 2000));
+    files = await loadFiles({ restoreCheckout: false });
+    submittedFile = findSubmittedPaymentFile(files, submittedPaymentId);
+    if (submittedFile && submittedFile.status !== "uploaded") {
+      showConfirmedPayment(submittedFile);
+      return;
+    }
+  }
+
+  setStatus("Payment was submitted, but PayFast confirmation is taking longer than expected. Do not pay again. Refresh this page shortly; your book will update automatically once confirmed.", true);
+  clearPaymentReturnQuery();
+}
+
+function findSubmittedPaymentFile(files, submittedPaymentId) {
+  if (submittedPaymentId) {
+    return files.find((file) => file.id === submittedPaymentId) || null;
+  }
+  return files.find((file) => file.status === "uploaded") || files[0] || null;
+}
+
+function showConfirmedPayment(file) {
+  sessionStorage.removeItem(PENDING_PAYMENT_STORAGE_KEY);
+  setStatus(`Payment confirmed for ${file.filename}. ${fileStatusCopy(file).detail}`);
+  clearPaymentReturnQuery();
+}
+
+function clearPaymentReturnQuery() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("payment");
+  window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  paymentReturnState = null;
 }
 
 async function restorePendingPaymentCheckout(uploadId) {
@@ -585,6 +655,7 @@ function renderFile(file) {
           data-filename="${escapeHtml(output.filename)}"
         >Download ${escapeHtml(output.title)} ${escapeHtml(audioFormat(output.filename))}</button>`).join("")}</div>`
     : "";
+  const progress = fileStatusCopy(file);
   return `
     <article class="file-row">
       <div>
@@ -601,9 +672,63 @@ function renderFile(file) {
           aria-label="Delete ${escapeHtml(file.filename)}"
         >Delete book</button>
       </div>
+      <div class="production-status production-status--${escapeHtml(progress.tone)}">
+        <strong>${escapeHtml(progress.title)}</strong>
+        <span>${escapeHtml(progress.detail)}</span>
+      </div>
       ${downloads}
     </article>
   `;
+}
+
+function fileStatusCopy(file) {
+  const submittedPaymentId = sessionStorage.getItem(PENDING_PAYMENT_STORAGE_KEY);
+  if (file.status === "uploaded" && file.id === submittedPaymentId) {
+    return {
+      tone: "pending",
+      title: "Payment submitted",
+      detail: "Waiting for PayFast confirmation. Do not pay again; refresh shortly if this does not update automatically.",
+    };
+  }
+  if (file.status === "queued" || file.status === "paid") {
+    return {
+      tone: "confirmed",
+      title: "Payment confirmed",
+      detail: "Your audiobook is queued for processing. We will email you when the MP3 chapters are ready.",
+    };
+  }
+  if (file.status === "processing") {
+    const completed = Number(file.progress_completed_chunks || 0);
+    const total = Number(file.progress_total_chunks || 0);
+    return {
+      tone: "processing",
+      title: "Payment confirmed · Processing",
+      detail: total > 0
+        ? `${completed} of ${total} audio sections complete. We will email you when the MP3 chapters are ready.`
+        : "Your audiobook is being produced. We will email you when the MP3 chapters are ready.",
+    };
+  }
+  if (file.status === "completed") {
+    return {
+      tone: "complete",
+      title: "Audiobook complete",
+      detail: file.completion_email_sent_at
+        ? "Your completion email was sent. Download the MP3 chapters below."
+        : "Your MP3 chapters are ready below; the completion email is being sent.",
+    };
+  }
+  if (file.status === "failed") {
+    return {
+      tone: "error",
+      title: "Payment confirmed · Processing needs attention",
+      detail: "Your payment is recorded. We will review the production error; do not pay again.",
+    };
+  }
+  return {
+    tone: "waiting",
+    title: "Awaiting payment",
+    detail: "Your book is uploaded, but payment has not been confirmed yet.",
+  };
 }
 
 async function downloadAuthenticatedFile(url, filename, button) {

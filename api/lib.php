@@ -544,6 +544,29 @@ function payfast_signature(array $fields, string $passphrase): string
     return md5(implode('&', $parts));
 }
 
+function payfast_notification_parameter_string(array $payload): string
+{
+    $parts = [];
+    foreach ($payload as $key => $value) {
+        if ($key === 'signature') {
+            break;
+        }
+        if ($value !== '') {
+            $parts[] = $key . '=' . urlencode((string) $value);
+        }
+    }
+    return implode('&', $parts);
+}
+
+function payfast_notification_signature(array $payload, string $passphrase): string
+{
+    $parameterString = payfast_notification_parameter_string($payload);
+    if ($passphrase !== '') {
+        $parameterString .= '&passphrase=' . urlencode($passphrase);
+    }
+    return md5($parameterString);
+}
+
 function request_base_url(array $config): string
 {
     $baseUrl = rtrim(trim((string) ($config['public_base_url'] ?? '')), '/');
@@ -573,7 +596,8 @@ function list_records(string $uploadDir, string $userId): array
 {
     $records = array_values(array_filter(
         list_all_records($uploadDir),
-        static fn(array $record): bool => ($record['user_id'] ?? '') === $userId,
+        static fn(array $record): bool => ($record['user_id'] ?? '') === $userId
+            && !in_array(($record['status'] ?? ''), ['deleting', 'deleted'], true),
     ));
     usort($records, fn ($a, $b) => strcmp($b['created_at'] ?? '', $a['created_at'] ?? ''));
     return $records;
@@ -686,69 +710,52 @@ function update_upload_record(string $uploadDir, string $uploadId, callable $tra
     }
 }
 
-function delete_upload_record(string $uploadDir, string $userId, string $uploadId): ?array
+function delete_upload_record(
+    string $uploadDir,
+    string $userId,
+    string $uploadId,
+    string $deletedBy = '',
+    string $deletionSource = 'user',
+): ?array
 {
-    $index = rtrim($uploadDir, '/\\') . '/uploads.jsonl';
-    if (!file_exists($index)) {
+    $existing = find_upload_record_any($uploadDir, $uploadId);
+    if ($existing === null || !hash_equals($userId, (string) ($existing['user_id'] ?? ''))) {
         return null;
     }
 
-    $handle = fopen($index, 'c+b');
-    if (!$handle) {
-        json_error('Could not open upload index', 500);
-    }
-    if (!flock($handle, LOCK_EX)) {
-        fclose($handle);
-        json_error('Could not lock upload index', 500);
-    }
-
-    rewind($handle);
-    $lines = preg_split('/\R/', stream_get_contents($handle) ?: '', -1, PREG_SPLIT_NO_EMPTY) ?: [];
-    $remaining = [];
-    $deleted = null;
-    foreach ($lines as $line) {
-        $record = json_decode($line, true);
-        if (
-            is_array($record)
-            && ($record['user_id'] ?? '') === $userId
-            && ($record['id'] ?? '') === $uploadId
-        ) {
-            $deleted = $record;
-            continue;
-        }
-        $remaining[] = $line;
-    }
-
-    if ($deleted === null) {
-        flock($handle, LOCK_UN);
-        fclose($handle);
+    $now = gmdate('c');
+    $deleting = update_upload_record($uploadDir, $uploadId, static function (array $record) use ($deletedBy, $deletionSource, $now): array {
+        $record['status_before_deletion'] = $record['status'] ?? '';
+        $record['status'] = 'deleting';
+        $record['deletion_requested_at'] = $now;
+        $record['deletion_source'] = $deletionSource;
+        $record['deleted_by'] = $deletedBy;
+        unset($record['deletion_error']);
+        return $record;
+    });
+    if ($deleting === null) {
         return null;
     }
-
-    rewind($handle);
-    if (!ftruncate($handle, 0)) {
-        flock($handle, LOCK_UN);
-        fclose($handle);
-        json_error('Could not update upload index', 500);
-    }
-    $serialized = $remaining ? implode("\n", $remaining) . "\n" : '';
-    if ($serialized !== '' && fwrite($handle, $serialized) === false) {
-        flock($handle, LOCK_UN);
-        fclose($handle);
-        json_error('Could not update upload index', 500);
-    }
-    fflush($handle);
-    flock($handle, LOCK_UN);
-    fclose($handle);
 
     $uploadPath = rtrim($uploadDir, '/\\')
         . '/users/' . hash('sha256', $userId)
         . '/uploads/' . $uploadId;
     if (!delete_private_tree($uploadPath)) {
-        json_error('The upload record was removed, but its private files could not be fully deleted', 500);
+        update_upload_record($uploadDir, $uploadId, static function (array $record): array {
+            $record['status'] = 'delete_failed';
+            $record['deletion_error'] = 'Private files could not be fully deleted';
+            return $record;
+        });
+        json_error('The private files could not be fully deleted', 500);
     }
 
-    return $deleted;
+    return update_upload_record($uploadDir, $uploadId, static function (array $record): array {
+        $record['status'] = 'deleted';
+        $record['deleted_at'] = gmdate('c');
+        $record['files_deleted_at'] = $record['deleted_at'];
+        unset($record['deletion_error']);
+        return $record;
+    });
 }
 
 function delete_private_tree(string $path): bool

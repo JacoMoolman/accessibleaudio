@@ -33,7 +33,10 @@ try {
     $deleted = delete_upload_record($root, $userId, $uploadId);
     assert_admin_delete(($deleted['id'] ?? '') === $uploadId, 'Expected record was not deleted');
     assert_admin_delete(!file_exists($uploadPath), 'Private manuscript/audio tree still exists');
-    assert_admin_delete(trim((string) file_get_contents($root . DIRECTORY_SEPARATOR . 'uploads.jsonl')) === '', 'Upload index still contains the record');
+    $auditRecord = json_decode(trim((string) file_get_contents($root . DIRECTORY_SEPARATOR . 'uploads.jsonl')), true);
+    assert_admin_delete(($auditRecord['status'] ?? '') === 'deleted', 'Deleted upload was not retained as an audit record');
+    assert_admin_delete(!empty($auditRecord['deleted_at']), 'Audit record is missing its deletion time');
+    assert_admin_delete(($auditRecord['status_before_deletion'] ?? '') === 'completed', 'Audit record lost its prior production status');
 
     echo "Admin delete smoke test passed.\n";
 } finally {
