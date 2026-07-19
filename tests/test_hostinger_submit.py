@@ -332,6 +332,7 @@ def test_production_security_controls_are_fail_closed_and_deployed():
     assert "object-src 'none'" in root_htaccess
     assert "script-src 'self'" in root_htaccess
     assert "script-src 'self' 'unsafe-inline'" not in root_htaccess
+    assert "form-action 'self' https://*.payfast.co.za https://*.payfast.io" in root_htaccess
     assert "Options -Indexes" in root_htaccess
     assert "LimitRequestBody 11534336" in api_htaccess
     for private_source in (
