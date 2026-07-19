@@ -20,7 +20,7 @@ $record = [
     'filename' => 'Alice.txt',
 ];
 $options = [
-    'narrator_voice' => 'Voice 6',
+    'narrator_voice' => 'Voice 1',
     'also_wav' => false,
     'translate' => false,
     'make_video' => false,

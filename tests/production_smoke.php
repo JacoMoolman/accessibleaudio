@@ -1,5 +1,12 @@
 <?php
 
+if (!function_exists('mb_strlen')) {
+    function mb_strlen(string $value): int
+    {
+        return strlen($value);
+    }
+}
+
 require dirname(__DIR__) . '/api/production.php';
 
 function assert_true(bool $condition, string $message): void
@@ -8,6 +15,14 @@ function assert_true(bool $condition, string $message): void
         throw new RuntimeException($message);
     }
 }
+
+$firstVoice = production_voice_config('Voice 1');
+$lastVoice = production_voice_config('Voice 30');
+assert_true(($firstVoice['provider_voice'] ?? '') === 'Zephyr', 'Voice 1 must map to the first retained cloud voice');
+assert_true(($lastVoice['provider_voice'] ?? '') === 'Sulafat', 'Voice 30 must map to the last retained cloud voice');
+assert_true(production_voice_config('Voice 31') === null, 'Voice 31 must not be accepted');
+assert_true(narrator_voice_pricing('Voice 1') !== null, 'Voice 1 must be priced');
+assert_true(narrator_voice_pricing('Voice 31') === null, 'Voice 31 must not be priced');
 
 $text = "CHAPTER I.\n\nDown the Rabbit-Hole\n\n"
     . str_repeat("Alice followed the rabbit. This is a sentence.\n\n", 80)

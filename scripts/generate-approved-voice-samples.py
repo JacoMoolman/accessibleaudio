@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Generate issue #38's approved samples through the running AudioBookMaker app.
 
-The public site receives one anonymous, numbered catalogue. The actual voice
-names stay in this local-generation manifest only, so the public sample page
-and submission form can share the same "Voice 1" through "Voice 35" labels.
+The generated archive contains the original local samples plus the retained
+cloud samples. The public site exposes only the 30 retained cloud samples and
+renumbers that sequence as "Voice 1" through "Voice 30".
 """
 
 from __future__ import annotations

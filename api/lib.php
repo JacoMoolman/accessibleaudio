@@ -384,7 +384,7 @@ function format_zar_cents(float|int $cents): string
 
 function narrator_voice_pricing(string $voice): ?array
 {
-    if (!preg_match('/^Voice ([6-9]|[12][0-9]|3[0-5])$/', trim($voice), $matches)) {
+    if (!preg_match('/^Voice ([1-9]|[12][0-9]|30)$/', trim($voice), $matches)) {
         return null;
     }
     return [
@@ -397,38 +397,38 @@ function narrator_voice_pricing(string $voice): ?array
 function production_voice_config(string $voice): ?array
 {
     $voices = [
-        6 => 'Zephyr',
-        7 => 'Puck',
-        8 => 'Charon',
-        9 => 'Kore',
-        10 => 'Fenrir',
-        11 => 'Leda',
-        12 => 'Orus',
-        13 => 'Aoede',
-        14 => 'Callirrhoe',
-        15 => 'Autonoe',
-        16 => 'Enceladus',
-        17 => 'Iapetus',
-        18 => 'Umbriel',
-        19 => 'Algieba',
-        20 => 'Despina',
-        21 => 'Erinome',
-        22 => 'Algenib',
-        23 => 'Rasalgethi',
-        24 => 'Laomedeia',
-        25 => 'Achernar',
-        26 => 'Alnilam',
-        27 => 'Schedar',
-        28 => 'Gacrux',
-        29 => 'Pulcherrima',
-        30 => 'Achird',
-        31 => 'Zubenelgenubi',
-        32 => 'Vindemiatrix',
-        33 => 'Sadachbia',
-        34 => 'Sadaltager',
-        35 => 'Sulafat',
+        1 => 'Zephyr',
+        2 => 'Puck',
+        3 => 'Charon',
+        4 => 'Kore',
+        5 => 'Fenrir',
+        6 => 'Leda',
+        7 => 'Orus',
+        8 => 'Aoede',
+        9 => 'Callirrhoe',
+        10 => 'Autonoe',
+        11 => 'Enceladus',
+        12 => 'Iapetus',
+        13 => 'Umbriel',
+        14 => 'Algieba',
+        15 => 'Despina',
+        16 => 'Erinome',
+        17 => 'Algenib',
+        18 => 'Rasalgethi',
+        19 => 'Laomedeia',
+        20 => 'Achernar',
+        21 => 'Alnilam',
+        22 => 'Schedar',
+        23 => 'Gacrux',
+        24 => 'Pulcherrima',
+        25 => 'Achird',
+        26 => 'Zubenelgenubi',
+        27 => 'Vindemiatrix',
+        28 => 'Sadachbia',
+        29 => 'Sadaltager',
+        30 => 'Sulafat',
     ];
-    if (!preg_match('/^Voice ([6-9]|[12][0-9]|3[0-5])$/', trim($voice), $matches)) {
+    if (!preg_match('/^Voice ([1-9]|[12][0-9]|30)$/', trim($voice), $matches)) {
         return null;
     }
     $number = (int) $matches[1];

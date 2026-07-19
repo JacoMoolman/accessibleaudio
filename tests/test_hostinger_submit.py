@@ -219,8 +219,9 @@ def test_numbered_voice_catalog_is_cloud_only_and_priced_without_naming_vendors(
     for provider_name in ("gemini", "google text", "omnivoice", "voice provider", "local ai", "grok"):
         assert provider_name not in public_voice_interface
 
-    assert "const firstVoiceNumber = 6" in catalog_js
+    assert "const firstVoiceNumber = 1" in catalog_js
     assert "const voiceCount = 30" in catalog_js
+    assert "const sampleFileOffset = 5" in catalog_js
     assert "const costPerWordCents = 0.75" in catalog_js
     assert 'typeLabel: "Voice narration"' in catalog_js
     assert "/assets/voice-samples/catalog/voice-" in catalog_js
@@ -229,7 +230,7 @@ def test_numbered_voice_catalog_is_cloud_only_and_priced_without_naming_vendors(
     assert "Available voices" in page
     assert "0.75c" in page
     assert "voice-provider-button" not in page
-    assert "../scripts/voice-catalog.js?v=20260718-cloud1" in submit_html
+    assert "../scripts/voice-catalog.js?v=20260719-voice1" in submit_html
     assert "The numbers match the" not in submit_html
     assert "Voice narration: 0.75c/word." in submit_html
     assert 'href="https://accessibleaudio.co.za/voice-samples.html">Voice samples</a>' in submit_html
@@ -241,8 +242,9 @@ def test_numbered_voice_catalog_is_cloud_only_and_priced_without_naming_vendors(
     assert "voice.availableForProduction" in submit_js
     assert "availableForProduction: true" in catalog_js
     assert "VOICE_COST_PER_WORD_CENTS = 0.75" in php_lib
-    assert "6 => 'Zephyr'" in php_lib
-    assert "35 => 'Sulafat'" in php_lib
+    assert "1 => 'Zephyr'" in php_lib
+    assert "30 => 'Sulafat'" in php_lib
+    assert "^Voice ([1-9]|[12][0-9]|30)$" in php_lib
     assert "narrator_voice_pricing" in php_lib
     assert "total_cost_cents(int $wordCount, string $narratorVoice" in php_lib
     assert "'voice_type' => $voicePricing['type']" in process_file
