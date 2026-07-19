@@ -481,8 +481,10 @@ def test_public_search_indexing_signals_are_canonical_and_complete():
     assert "RewriteRule ^index\\.html$ https://accessibleaudio.co.za/ [R=301,L]" in htaccess
     assert "RewriteCond %{HTTP_HOST} ^www\\.accessibleaudio\\.co\\.za$ [NC]" in htaccess
 
+    homepage = read("index.html")
+    assert '<a href="submit/">Submit</a>' not in homepage
+
     for page_path in (
-        "index.html",
         "audiobooks.html",
         "contact.html",
         "faq.html",

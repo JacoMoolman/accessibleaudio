@@ -132,7 +132,7 @@ Assert-Contains $index '<meta name="twitter:card" content="summary_large_image">
 Assert-Contains $index '"@type": "WebSite"' "homepage structured data"
 Assert-Contains $index '"@type": "Organization"' "homepage structured data"
 Assert-Contains $index 'https://accessibleaudio.co.za/assets/accessible-audio-logo-round-1024.png' "homepage structured data"
-Assert-Contains $index '<a href="submit/">Submit</a>' "homepage navigation"
+Assert-NotContains $index '<a href="submit/">Submit</a>' "homepage navigation"
 Assert-Contains $index "audiobooks.html" "homepage"
 Assert-Contains $index '>Sample AudioBooks</a>' "homepage navigation"
 Assert-Contains $audiobooks '>Sample AudioBooks</a>' "audiobook library navigation"
