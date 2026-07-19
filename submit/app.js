@@ -166,6 +166,7 @@ uploadForm.addEventListener("submit", async (event) => {
     });
     renderPaymentCheckout(data.payment);
     uploadForm.reset();
+    document.getElementById("terms-accepted").checked = true;
     fileAnalysis = null;
     renderAnalysisResult();
     renderCostEstimate();
@@ -230,10 +231,7 @@ payfastForm.addEventListener("submit", (event) => {
   if (!payfastForm.getAttribute("action")) {
     event.preventDefault();
     setStatus("Upload a book before paying.", true);
-    return;
   }
-  event.preventDefault();
-  payfastForm.submit();
 });
 
 async function analyzeSelectedFile() {

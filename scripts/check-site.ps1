@@ -240,7 +240,7 @@ Assert-Contains $voiceCatalogScript "/assets/voice-samples/catalog/voice-" "voic
 Assert-Contains $voiceSamplesScript "window.ACCESSIBLE_AUDIO_VOICES" "voice sample script"
 Assert-Contains $submitIndex "../scripts/voice-catalog.js?v=20260719-voice1" "submit page"
 Assert-Contains $submitIndex "./styles.css?v=20260718-payfast1" "submit page"
-Assert-Contains $submitIndex "./app.js?v=20260718-payfast1" "submit page"
+Assert-Contains $submitIndex "./app.js?v=20260719-payfast2" "submit page"
 Assert-Contains $submitIndex "PayFast does not allow the merchant account to pay itself" "submit page"
 Assert-Contains $submitIndex 'id="stop-narrator-sample" disabled' "submit page"
 Assert-Contains $submitApp '/api/delete-file.php' "submit script"

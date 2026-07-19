@@ -15,7 +15,7 @@ def test_hostinger_submit_frontend_uses_php_api_and_client_side_analysis():
     app_js = read("submit/app.js")
 
     assert 'href="./styles.css?v=20260718-payfast1"' in html
-    assert 'src="./app.js?v=20260718-payfast1"' in html
+    assert 'src="./app.js?v=20260719-payfast2"' in html
     assert 'fetchJson("/api/config.php")' in app_js
     assert 'fetchJson("/api/process-file.php"' in app_js
     assert 'fetchJson("/api/files.php"' in app_js
@@ -101,7 +101,7 @@ def test_submit_narrator_sample_has_working_stop_control():
     assert 'id="play-narrator-sample"' in page
     assert 'id="stop-narrator-sample" disabled' in page
     assert "styles.css?v=20260718-payfast1" in page
-    assert "app.js?v=20260718-payfast1" in page
+    assert "app.js?v=20260719-payfast2" in page
     assert 'getElementById("stop-narrator-sample")' in app_js
     assert "stopNarratorSampleButton.disabled = false" in app_js
     assert "audio.pause()" in app_js
@@ -139,6 +139,20 @@ def test_existing_upload_rows_do_not_show_a_secondary_pay_button():
     assert "Pay now" not in app_js
     assert "renderPaymentCheckout(data.payment)" in app_js
     assert "Pay with PayFast" in app_js
+
+
+def test_primary_payfast_form_uses_native_navigation_and_keeps_terms_accepted():
+    page = read("submit/index.html")
+    app_js = read("submit/app.js")
+
+    assert 'id="payfast-form" method="post" target="_self"' in page
+    handler_start = app_js.index('payfastForm.addEventListener("submit"')
+    handler_end = app_js.index("async function analyzeSelectedFile")
+    payfast_handler = app_js[handler_start:handler_end]
+    assert 'if (!payfastForm.getAttribute("action"))' in payfast_handler
+    assert payfast_handler.count("event.preventDefault()") == 1
+    assert "payfastForm.submit()" not in payfast_handler
+    assert 'document.getElementById("terms-accepted").checked = true' in app_js
 
 
 def test_payfast_self_payment_asks_for_an_alternate_payer_email():
