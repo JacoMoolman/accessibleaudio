@@ -369,6 +369,7 @@ def test_costly_api_work_is_rate_limited_before_external_calls():
         "files": read("api/files.php"),
         "payment": read("api/payment.php"),
         "delete": read("api/delete-file.php"),
+        "admin-delete": read("api/admin-delete.php"),
         "admin-files": read("api/admin-files.php"),
         "admin-download": read("api/admin-download.php"),
     }
@@ -592,6 +593,7 @@ def test_private_admin_queue_requires_configured_google_admin_and_secure_downloa
     app_js = read("admin/app.js")
     styles = read("admin/styles.css")
     endpoint = read("api/admin-files.php")
+    admin_delete = read("api/admin-delete.php")
     download = read("api/admin-download.php")
     php_lib = read("api/lib.php")
     deploy = read("scripts/deploy-hostinger.ps1")
@@ -604,10 +606,17 @@ def test_private_admin_queue_requires_configured_google_admin_and_secure_downloa
     assert 'fetchJson("/api/admin-files.php"' in app_js
     assert "Authorization: `Bearer ${currentSession.access_token}`" in app_js
     assert "response.blob()" in app_js
+    assert 'fetchJson("/api/admin-delete.php"' in app_js
+    assert "data-delete-job" in app_js
+    assert "all generated audio? This cannot be undone." in app_js
     assert "require_admin($config, $user)" in endpoint
     assert "list_production_records" in endpoint
     assert "require_admin($config, $user)" in download
     assert "find_upload_record_any" in download
+    assert "require_admin($config, $user)" in admin_delete
+    assert "find_upload_record_any" in admin_delete
+    assert "delete_upload_record($uploadDir, $ownerId, $uploadId)" in admin_delete
+    assert "Wait for production to finish" in admin_delete
     assert "Content-Disposition: attachment" in download
     assert "str_starts_with($realPath, $root . DIRECTORY_SEPARATOR)" in download
     assert "function require_admin" in php_lib
@@ -624,8 +633,8 @@ def test_admin_job_layout_keeps_metadata_readable_beside_multiple_downloads():
     app_js = read("admin/app.js")
     styles = read("admin/styles.css")
 
-    assert 'styles.css?v=20260718-layout1' in html
-    assert 'app.js?v=20260718-layout1' in html
+    assert 'styles.css?v=20260719-delete1' in html
+    assert 'app.js?v=20260719-delete1' in html
     assert "grid-template-columns: minmax(220px, .7fr) minmax(0, 1.4fr);" in styles
     assert ".download-list { display: flex; grid-column: 1 / -1;" in styles
     assert "dl div:last-child { grid-column: 1 / -1; }" in styles
@@ -633,6 +642,8 @@ def test_admin_job_layout_keeps_metadata_readable_beside_multiple_downloads():
     assert "minmax(0, 1.4fr) auto" not in styles
     assert "audioFormat(output.filename)" in app_js
     assert "function audioFormat(filename)" in app_js
+    assert 'deleteButton.textContent = "Delete book and audio"' in app_js
+    assert ".delete-button" in styles
 
 
 def test_hostinger_php_backend_stores_uploads_locally_without_aws_or_s3_keys():

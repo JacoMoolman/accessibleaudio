@@ -69,6 +69,8 @@ dl div:last-child { grid-column: 1 / -1; }
 dt { margin-bottom: 4px; color: var(--muted); font-size: .72rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
 dd { margin: 0; color: var(--ink); font-size: .88rem; overflow-wrap: anywhere; }
 .download-button { white-space: nowrap; }
+.delete-button { min-height: 46px; margin-left: auto; padding: 12px 18px; border: 1px solid rgba(255, 128, 116, .72); border-radius: 8px; background: rgba(151, 38, 29, .28); color: #ffd3ce; font-weight: 850; }
+.delete-button:hover { background: rgba(190, 47, 36, .46); border-color: #ff9b90; }
 .empty-state { padding: 46px 24px; border: 1px dashed var(--line); border-radius: 12px; color: var(--muted); text-align: center; }
 button:disabled { cursor: wait; opacity: .55; }
 
@@ -79,7 +81,8 @@ button:disabled { cursor: wait; opacity: .55; }
   .hero, .auth-card, .job-card { grid-template-columns: 1fr; }
   .auth-mark { min-height: 150px; }
   .job-card { align-items: start; }
-  .download-button { width: 100%; }
+  .download-button, .delete-button { width: 100%; }
+  .delete-button { margin-left: 0; }
 }
 @media (max-width: 620px) {
   main { width: min(100% - 28px, 1240px); padding-top: 50px; }

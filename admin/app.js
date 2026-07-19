@@ -52,6 +52,32 @@ refreshButton.addEventListener("click", loadJobs);
 searchInput.addEventListener("input", renderJobs);
 
 jobList.addEventListener("click", async (event) => {
+  const deleteButton = event.target.closest("[data-delete-job]");
+  if (deleteButton && currentSession?.access_token) {
+    const filename = deleteButton.dataset.filename || "this book";
+    const confirmed = window.confirm(`Delete ${filename}, its manuscript, and all generated audio? This cannot be undone.`);
+    if (!confirmed) return;
+
+    deleteButton.disabled = true;
+    setStatus(`Deleting ${filename} and all of its files...`);
+    try {
+      await fetchJson("/api/admin-delete.php", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${currentSession.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ upload_id: deleteButton.dataset.deleteJob }),
+      });
+      await loadJobs();
+      setStatus(`${filename}, its manuscript, and all generated audio were deleted.`);
+    } catch (error) {
+      deleteButton.disabled = false;
+      setStatus(error.message, true);
+    }
+    return;
+  }
+
   const button = event.target.closest("[data-download]");
   if (!button || !currentSession?.access_token) return;
   button.disabled = true;
@@ -162,6 +188,13 @@ function renderJobs() {
       audioButton.textContent = `Download ${output.title} ${audioFormat(output.filename)}`;
       downloadList.append(audioButton);
     });
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "delete-button";
+    deleteButton.type = "button";
+    deleteButton.dataset.deleteJob = job.id;
+    deleteButton.dataset.filename = job.filename || "this book";
+    deleteButton.textContent = "Delete book and audio";
+    downloadList.append(deleteButton);
     jobList.append(card);
   });
 }
