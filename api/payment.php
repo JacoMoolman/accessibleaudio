@@ -68,6 +68,11 @@ try {
 } catch (InvalidArgumentException $error) {
     json_error($error->getMessage(), 400);
 }
+audit_event($config, 'payment.checkout_created', 'success', [], [
+    'upload_id' => $uploadId,
+    'filename' => (string) ($record['filename'] ?? ''),
+    'payment_reference' => 'AA-' . $uploadId,
+]);
 
 json_response([
     'payment' => $payment,

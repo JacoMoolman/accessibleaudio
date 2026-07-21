@@ -6,7 +6,7 @@
     <meta name="robots" content="noindex,nofollow,noarchive">
     <title>Production Queue | Accessible Audio</title>
     <link rel="icon" href="../favicon.svg?v=20260612-private" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles.css?v=20260719-delete1">
+    <link rel="stylesheet" href="./styles.css?v=20260721-audit1">
   </head>
   <body>
     <header class="admin-header">
@@ -64,6 +64,23 @@
         <p class="status" id="status" role="status" aria-live="polite"></p>
         <div class="job-list" id="job-list"></div>
       </section>
+
+      <section class="audit-section" id="audit-section" hidden aria-labelledby="audit-title">
+        <div class="queue-heading">
+          <div>
+            <p class="eyebrow">Troubleshooting and accountability</p>
+            <h2 id="audit-title">Audit log</h2>
+          </div>
+          <button class="refresh-button" id="audit-refresh-button" type="button">Refresh audit log</button>
+        </div>
+        <p class="audit-note">Recent authentication, upload, payment, production, download, deletion, contact and API events. Secrets, tokens and manuscript contents are never recorded.</p>
+        <label class="search-field">
+          <span>Filter by event, email, upload, outcome or request ID</span>
+          <input id="audit-search-input" type="search" placeholder="Search recent audit events">
+        </label>
+        <p class="status" id="audit-status" role="status" aria-live="polite"></p>
+        <div class="audit-list" id="audit-list"></div>
+      </section>
     </main>
 
     <template id="job-template">
@@ -87,7 +104,23 @@
       </article>
     </template>
 
+    <template id="audit-template">
+      <article class="audit-card">
+        <div class="audit-card-heading">
+          <strong data-field="audit_event"></strong>
+          <span class="audit-outcome" data-field="audit_outcome"></span>
+        </div>
+        <p data-field="audit_time"></p>
+        <dl>
+          <div><dt>Actor</dt><dd data-field="audit_actor"></dd></div>
+          <div><dt>Request</dt><dd data-field="audit_request"></dd></div>
+          <div><dt>Request ID</dt><dd data-field="audit_request_id"></dd></div>
+          <div><dt>Details</dt><dd data-field="audit_details"></dd></div>
+        </dl>
+      </article>
+    </template>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.5" integrity="sha384-Fntl9b+IRzm2GKZK0c129fQFknWsn8pyxDejLO4wwds1LF9DSob2K2QXlfw8EIXn" crossorigin="anonymous"></script>
-    <script src="./app.js?v=20260719-delete1"></script>
+    <script src="./app.js?v=20260721-audit1"></script>
   </body>
 </html>

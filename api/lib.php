@@ -49,7 +49,7 @@ function hostinger_config(): array
     }
     $fileConfig = array_merge($publicConfig, $fileConfig);
 
-    return [
+    $config = [
         'supabase_url' => config_value($fileConfig, 'SUPABASE_URL', ''),
         'supabase_anon_key' => config_value($fileConfig, 'SUPABASE_ANON_KEY', ''),
         'turnstile_site_key' => config_value($fileConfig, 'TURNSTILE_SITE_KEY', null),
@@ -84,6 +84,8 @@ function hostinger_config(): array
         'test_login_password' => config_value($fileConfig, 'TEST_LOGIN_PASSWORD', ''),
         'test_login_user_id' => config_value($fileConfig, 'TEST_LOGIN_USER_ID', '00000000-0000-4000-8000-000000000006'),
     ];
+    $GLOBALS['aa_audit_config'] = $config;
+    return $config;
 }
 
 function config_value(array $fileConfig, string $name, mixed $default): mixed
@@ -100,6 +102,17 @@ function json_response(mixed $payload, int $status = 200): never
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
     header('X-Content-Type-Options: nosniff');
+    header('X-Request-ID: ' . request_id());
+    if (PHP_SAPI !== 'cli' && is_array($GLOBALS['aa_audit_config'] ?? null)) {
+        $message = is_array($payload) && isset($payload['detail']) ? (string) $payload['detail'] : '';
+        audit_event(
+            $GLOBALS['aa_audit_config'],
+            'http.request',
+            $status >= 400 ? 'error' : 'success',
+            [],
+            ['status' => $status, 'message' => $message],
+        );
+    }
     echo json_encode($payload, JSON_UNESCAPED_SLASHES);
     exit;
 }
@@ -129,11 +142,13 @@ function current_user(array $config): array
 {
     $token = require_bearer_token();
     if ($config['enable_test_login'] && verify_test_token($token, $config['test_login_password'])) {
-        return [
+        $user = [
             'id' => $config['test_login_user_id'],
             'email' => $config['test_login_email'] ?: 'test@accessibleaudio.local',
             'token' => $token,
         ];
+        audit_set_actor($user);
+        return $user;
     }
 
     if (!$config['supabase_url'] || !$config['supabase_anon_key']) {
@@ -153,11 +168,116 @@ function current_user(array $config): array
     if (!is_array($data) || empty($data['id'])) {
         json_error('Invalid Supabase user response', 401);
     }
-    return [
+    $user = [
         'id' => $data['id'],
         'email' => $data['email'] ?? '',
         'token' => $token,
     ];
+    audit_set_actor($user);
+    return $user;
+}
+
+function request_id(): string
+{
+    static $requestId = null;
+    if ($requestId === null) {
+        $incoming = trim((string) ($_SERVER['HTTP_X_REQUEST_ID'] ?? ''));
+        $requestId = preg_match('/^[a-zA-Z0-9._-]{8,80}$/', $incoming)
+            ? $incoming
+            : bin2hex(random_bytes(8));
+    }
+    return $requestId;
+}
+
+function audit_set_actor(array $user): void
+{
+    $GLOBALS['aa_audit_actor'] = [
+        'user_id' => (string) ($user['id'] ?? ''),
+        'email' => strtolower(trim((string) ($user['email'] ?? ''))),
+    ];
+}
+
+function audit_safe_value(mixed $value, string $key = ''): mixed
+{
+    if (preg_match('/token|password|secret|passphrase|signature|authorization|content|message_body/i', $key)) {
+        return '[redacted]';
+    }
+    if (is_array($value)) {
+        $safe = [];
+        foreach ($value as $childKey => $childValue) {
+            $safe[$childKey] = audit_safe_value($childValue, (string) $childKey);
+        }
+        return $safe;
+    }
+    if (is_bool($value) || is_int($value) || is_float($value) || $value === null) {
+        return $value;
+    }
+    return substr((string) $value, 0, 500);
+}
+
+function audit_event(
+    array $config,
+    string $event,
+    string $outcome = 'success',
+    array $actor = [],
+    array $details = [],
+): void {
+    $uploadDir = rtrim((string) ($config['upload_dir'] ?? ''), '/\\');
+    if ($uploadDir === '' || (!is_dir($uploadDir) && !@mkdir($uploadDir, 0750, true))) {
+        error_log('Accessible Audio audit log directory is unavailable');
+        return;
+    }
+    $resolvedActor = array_merge(is_array($GLOBALS['aa_audit_actor'] ?? null) ? $GLOBALS['aa_audit_actor'] : [], $actor);
+    unset($resolvedActor['token']);
+    $entry = [
+        'timestamp' => gmdate('c'),
+        'request_id' => request_id(),
+        'event' => preg_replace('/[^a-z0-9._-]+/i', '-', $event) ?: 'unknown',
+        'outcome' => preg_replace('/[^a-z0-9._-]+/i', '-', $outcome) ?: 'unknown',
+        'actor' => audit_safe_value($resolvedActor),
+        'request' => [
+            'method' => (string) ($_SERVER['REQUEST_METHOD'] ?? 'CLI'),
+            'path' => (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH),
+            'ip' => substr(trim((string) ($_SERVER['REMOTE_ADDR'] ?? '')), 0, 64),
+            'user_agent' => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 300),
+        ],
+        'details' => audit_safe_value($details),
+    ];
+    $path = $uploadDir . '/audit-' . gmdate('Y-m') . '.jsonl';
+    $encoded = json_encode($entry, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+    if ($encoded === false || @file_put_contents($path, $encoded . "\n", FILE_APPEND | LOCK_EX) === false) {
+        error_log('Accessible Audio audit event could not be written: ' . $event);
+    }
+}
+
+function list_audit_events(array $config, int $limit = 200, string $eventFilter = '', string $query = ''): array
+{
+    $uploadDir = rtrim((string) ($config['upload_dir'] ?? ''), '/\\');
+    $files = glob($uploadDir . '/audit-*.jsonl') ?: [];
+    rsort($files, SORT_STRING);
+    $events = [];
+    $eventFilter = strtolower(trim($eventFilter));
+    $query = strtolower(trim($query));
+    foreach ($files as $file) {
+        $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+        foreach (array_reverse($lines) as $line) {
+            $entry = json_decode($line, true);
+            if (!is_array($entry)) {
+                continue;
+            }
+            if ($eventFilter !== '' && !str_contains(strtolower((string) ($entry['event'] ?? '')), $eventFilter)) {
+                continue;
+            }
+            if ($query !== '' && !str_contains(strtolower(json_encode($entry, JSON_UNESCAPED_SLASHES) ?: ''), $query)) {
+                continue;
+            }
+            $events[] = $entry;
+            if (count($events) >= $limit) {
+                return $events;
+            }
+        }
+    }
+    return $events;
 }
 
 function require_admin(array $config, array $user): void

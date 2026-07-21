@@ -449,6 +449,14 @@ function finalize_production(array $config, string $uploadDir, array $record, ar
     if ($updated === null) {
         throw new RuntimeException('Could not mark the audiobook completed');
     }
+    audit_event($config, 'production.completed', 'success', [
+        'user_id' => (string) ($record['user_id'] ?? ''),
+        'email' => (string) ($record['user_email'] ?? ''),
+    ], [
+        'upload_id' => (string) ($record['id'] ?? ''),
+        'filename' => (string) ($record['filename'] ?? ''),
+        'output_count' => count($outputs),
+    ]);
     return $updated;
 }
 
@@ -516,6 +524,13 @@ function run_production_worker(array $config, bool $processAll = false): array
                     $current['processing_started_at'] = $current['processing_started_at'] ?? gmdate('c');
                     return $current;
                 }) ?? $record;
+                audit_event($config, 'production.started', 'success', [
+                    'user_id' => (string) ($record['user_id'] ?? ''),
+                    'email' => (string) ($record['user_email'] ?? ''),
+                ], [
+                    'upload_id' => (string) ($record['id'] ?? ''),
+                    'filename' => (string) ($record['filename'] ?? ''),
+                ]);
             }
             $manifestPath = production_manifest_path($uploadDir, $record);
             $manifest = read_production_manifest($manifestPath);
@@ -558,6 +573,16 @@ function run_production_worker(array $config, bool $processAll = false): array
                     $current['progress_total_chunks'] = $totalChunks;
                     return $current;
                 });
+                audit_event($config, 'production.chunk_completed', 'success', [
+                    'user_id' => (string) ($record['user_id'] ?? ''),
+                    'email' => (string) ($record['user_email'] ?? ''),
+                ], [
+                    'upload_id' => (string) ($record['id'] ?? ''),
+                    'chapter' => $chapterIndex + 1,
+                    'chunk' => $chunkIndex + 1,
+                    'completed_chunks' => $completedChunks,
+                    'total_chunks' => $totalChunks,
+                ]);
             } catch (Throwable $error) {
                 $attempts = (int) $manifest['chapters'][$chapterIndex]['chunks'][$chunkIndex]['attempts'];
                 $manifest['chapters'][$chapterIndex]['chunks'][$chunkIndex]['status'] = 'failed';
@@ -569,6 +594,16 @@ function run_production_worker(array $config, bool $processAll = false): array
                         return $current;
                     });
                 }
+                audit_event($config, 'production.chunk_failed', $attempts >= PRODUCTION_MAX_ATTEMPTS ? 'failed' : 'retrying', [
+                    'user_id' => (string) ($record['user_id'] ?? ''),
+                    'email' => (string) ($record['user_email'] ?? ''),
+                ], [
+                    'upload_id' => (string) ($record['id'] ?? ''),
+                    'chapter' => $chapterIndex + 1,
+                    'chunk' => $chunkIndex + 1,
+                    'attempt' => $attempts,
+                    'error' => $error->getMessage(),
+                ]);
                 throw $error;
             } finally {
                 $manifest['updated_at'] = gmdate('c');

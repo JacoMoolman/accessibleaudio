@@ -96,6 +96,11 @@ try {
     error_log('Accessible Audio contact SMTP failure: ' . $error->getMessage());
     json_error('Your message could not be delivered. Please try again later.', 502);
 }
+audit_event($config, 'contact.submitted', 'success', ['email' => strtolower($email)], [
+    'organisation' => $organisation,
+    'subject' => $safeSubject,
+    'message_length' => strlen($message),
+]);
 
 json_response(['ok' => true]);
 

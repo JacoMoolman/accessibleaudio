@@ -15,7 +15,7 @@ def test_hostinger_submit_frontend_uses_php_api_and_client_side_analysis():
     app_js = read("submit/app.js")
 
     assert 'href="./styles.css?v=20260719-status1"' in html
-    assert 'src="./app.js?v=20260719-status1"' in html
+    assert 'src="./app.js?v=20260721-audit1"' in html
     assert 'fetchJson("/api/config.php")' in app_js
     assert 'fetchJson("/api/process-file.php"' in app_js
     assert 'fetchJson("/api/files.php"' in app_js
@@ -101,7 +101,7 @@ def test_submit_narrator_sample_has_working_stop_control():
     assert 'id="play-narrator-sample"' in page
     assert 'id="stop-narrator-sample" disabled' in page
     assert "styles.css?v=20260719-status1" in page
-    assert "app.js?v=20260719-status1" in page
+    assert "app.js?v=20260721-audit1" in page
     assert 'getElementById("stop-narrator-sample")' in app_js
     assert "stopNarratorSampleButton.disabled = false" in app_js
     assert "audio.pause()" in app_js
@@ -577,6 +577,59 @@ def test_admin_uses_the_best_available_payfast_payment_reference():
     assert "'payfast_payment_id' => payment_reference($record)" in admin_files
 
 
+def test_security_conscious_audit_logging_covers_site_actions_and_admin_review():
+    php_lib = read("api/lib.php")
+    audit_endpoint = read("api/audit-event.php")
+    admin_audit = read("api/admin-audit.php")
+    admin_html = read("admin/index.html")
+    admin_js = read("admin/app.js")
+    admin_css = read("admin/styles.css")
+    submit_js = read("submit/app.js")
+
+    assert "function audit_event" in php_lib
+    assert "function list_audit_events" in php_lib
+    assert "JSON_INVALID_UTF8_SUBSTITUTE" in php_lib
+    assert "token|password|secret|passphrase|signature|authorization|content|message_body" in php_lib
+    assert "X-Request-ID" in php_lib
+    assert "require_admin($config, $user)" in admin_audit
+    assert "max(1, min(500" in admin_audit
+    assert "user.login" in audit_endpoint and "admin.logout" in audit_endpoint
+    assert 'id="audit-section"' in admin_html
+    assert 'src="./app.js?v=20260721-audit1"' in admin_html
+    assert 'href="./styles.css?v=20260721-audit1"' in admin_html
+    assert 'fetchJson("/api/admin-audit.php?limit=200"' in admin_js
+    assert 'recordAuditEvent("admin.login")' in admin_js
+    assert 'recordAuditEvent("user.login")' in submit_js
+    assert ".audit-card" in admin_css
+
+    event_sources = "\n".join(
+        read(path)
+        for path in (
+            "api/process-file.php",
+            "api/payment.php",
+            "api/payfast-notify.php",
+            "api/production.php",
+            "api/download-audio.php",
+            "api/admin-download.php",
+            "api/delete-file.php",
+            "api/admin-delete.php",
+            "api/contact.php",
+        )
+    )
+    for event in (
+        "upload.created",
+        "payment.checkout_created",
+        "payment.notification",
+        "production.started",
+        "production.completed",
+        "audio.downloaded",
+        "manuscript.downloaded",
+        "upload.deleted",
+        "contact.submitted",
+    ):
+        assert event in event_sources
+
+
 def test_paid_orders_are_processed_server_side_into_downloadable_mp3_chapters():
     production = read("api/production.php")
     worker = read("api/process-queue.php")
@@ -668,8 +721,8 @@ def test_admin_job_layout_keeps_metadata_readable_beside_multiple_downloads():
     app_js = read("admin/app.js")
     styles = read("admin/styles.css")
 
-    assert 'styles.css?v=20260719-delete1' in html
-    assert 'app.js?v=20260719-delete1' in html
+    assert 'styles.css?v=20260721-audit1' in html
+    assert 'app.js?v=20260721-audit1' in html
     assert "grid-template-columns: minmax(220px, .7fr) minmax(0, 1.4fr);" in styles
     assert ".download-list { display: flex; grid-column: 1 / -1;" in styles
     assert "dl div:last-child { grid-column: 1 / -1; }" in styles

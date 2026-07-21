@@ -1,6 +1,7 @@
 let supabaseClient = null;
 let currentSession = null;
 let jobs = [];
+let auditedSessionToken = null;
 
 const authCard = document.getElementById("auth-card");
 const authState = document.getElementById("auth-state");
@@ -11,6 +12,12 @@ const refreshButton = document.getElementById("refresh-button");
 const searchInput = document.getElementById("search-input");
 const statusEl = document.getElementById("status");
 const jobList = document.getElementById("job-list");
+const auditSection = document.getElementById("audit-section");
+const auditList = document.getElementById("audit-list");
+const auditStatus = document.getElementById("audit-status");
+const auditSearchInput = document.getElementById("audit-search-input");
+const auditRefreshButton = document.getElementById("audit-refresh-button");
+let auditEvents = [];
 
 init();
 
@@ -46,10 +53,14 @@ googleButton.addEventListener("click", async () => {
 });
 
 logoutButton.addEventListener("click", async () => {
+  await recordAuditEvent("admin.logout");
+  auditedSessionToken = null;
   await supabaseClient.auth.signOut();
 });
 refreshButton.addEventListener("click", loadJobs);
 searchInput.addEventListener("input", renderJobs);
+auditRefreshButton.addEventListener("click", loadAuditEvents);
+auditSearchInput.addEventListener("input", renderAuditEvents);
 
 jobList.addEventListener("click", async (event) => {
   const deleteButton = event.target.closest("[data-delete-job]");
@@ -112,13 +123,35 @@ async function setSession(session) {
   logoutButton.hidden = !session;
   authCard.hidden = Boolean(session);
   queue.hidden = true;
+  auditSection.hidden = true;
   jobs = [];
+  auditEvents = [];
   if (!session) {
     googleButton.disabled = false;
     authState.textContent = "Sign in with the authorised Accessible Audio administrator account.";
     return;
   }
-  await loadJobs();
+  if (auditedSessionToken !== session.access_token) {
+    auditedSessionToken = session.access_token;
+    await recordAuditEvent("admin.login");
+  }
+  await Promise.all([loadJobs(), loadAuditEvents()]);
+}
+
+async function recordAuditEvent(event) {
+  if (!currentSession?.access_token) return;
+  try {
+    await fetchJson("/api/audit-event.php", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${currentSession.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ event }),
+    });
+  } catch (_error) {
+    // Audit delivery must never block authentication or logout.
+  }
 }
 
 async function loadJobs() {
@@ -142,6 +175,59 @@ async function loadJobs() {
   } finally {
     refreshButton.disabled = false;
   }
+}
+
+async function loadAuditEvents() {
+  if (!currentSession?.access_token) return;
+  auditRefreshButton.disabled = true;
+  auditStatus.textContent = "Loading recent audit events...";
+  try {
+    auditEvents = await fetchJson("/api/admin-audit.php?limit=200", {
+      headers: { Authorization: `Bearer ${currentSession.access_token}` },
+    });
+    auditSection.hidden = false;
+    renderAuditEvents();
+    auditStatus.textContent = `${auditEvents.length} recent audit ${auditEvents.length === 1 ? "event" : "events"}.`;
+  } catch (error) {
+    auditSection.hidden = false;
+    auditStatus.textContent = error.message;
+    auditStatus.classList.add("error");
+  } finally {
+    auditRefreshButton.disabled = false;
+  }
+}
+
+function renderAuditEvents() {
+  const query = auditSearchInput.value.trim().toLowerCase();
+  const visibleEvents = auditEvents.filter((entry) => JSON.stringify(entry).toLowerCase().includes(query));
+  auditList.innerHTML = "";
+  if (!visibleEvents.length) {
+    const empty = document.createElement("p");
+    empty.className = "empty-state";
+    empty.textContent = auditEvents.length ? "No audit events match that search." : "No audit events have been recorded yet.";
+    auditList.append(empty);
+    return;
+  }
+  visibleEvents.forEach((entry) => {
+    const card = document.getElementById("audit-template").content.cloneNode(true);
+    const actor = entry.actor || {};
+    const request = entry.request || {};
+    setField(card, "audit_event", entry.event || "unknown");
+    setField(card, "audit_outcome", entry.outcome || "unknown");
+    setField(card, "audit_time", formatDate(entry.timestamp));
+    setField(card, "audit_actor", actor.email || actor.user_id || "Anonymous/system");
+    setField(card, "audit_request", [request.method, request.path, request.ip].filter(Boolean).join(" · ") || "System event");
+    setField(card, "audit_request_id", entry.request_id || "Unavailable");
+    setField(card, "audit_details", compactAuditDetails(entry.details));
+    auditList.append(card);
+  });
+}
+
+function compactAuditDetails(details) {
+  if (!details || !Object.keys(details).length) return "No additional details";
+  return Object.entries(details)
+    .map(([key, value]) => `${key}: ${typeof value === "object" ? JSON.stringify(value) : value}`)
+    .join(" · ");
 }
 
 function renderSummary() {

@@ -87,6 +87,13 @@ append_record($uploadDir, $record);
 
 $payment = build_payfast_checkout($config, $user, $record, $wordCount, $options);
 $estimatedCostCents = total_cost_cents($wordCount, $options['narrator_voice'], $options['also_wav'], $options['translate'], $options['make_video']);
+audit_event($config, 'upload.created', 'success', [], [
+    'upload_id' => $uploadId,
+    'filename' => $filename,
+    'word_count' => $wordCount,
+    'narrator_voice' => $narratorVoice,
+    'terms_version' => $termsVersion,
+]);
 
 json_response($record + [
     'payment' => $payment,

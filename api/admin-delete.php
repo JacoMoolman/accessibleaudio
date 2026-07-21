@@ -35,6 +35,12 @@ $deleted = delete_upload_record($uploadDir, $ownerId, $uploadId, (string) $user[
 if ($deleted === null) {
     json_error('Upload not found', 404);
 }
+audit_event($config, 'upload.deleted', 'success', [], [
+    'upload_id' => $uploadId,
+    'filename' => (string) ($deleted['filename'] ?? ''),
+    'owner_id' => $ownerId,
+    'source' => 'admin',
+]);
 
 json_response([
     'ok' => true,

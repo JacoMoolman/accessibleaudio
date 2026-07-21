@@ -35,6 +35,7 @@ const VOICE_SAMPLE_URLS = Object.fromEntries(
 );
 let fileAnalysis = null;
 let currentVoiceSampleAudio = null;
+let auditedSessionToken = null;
 let paymentReturnState = new URLSearchParams(window.location.search).get("payment");
 let paymentReturnHandled = false;
 const PENDING_PAYMENT_STORAGE_KEY = "accessibleAudioPendingPayFastUpload";
@@ -98,6 +99,8 @@ googleButton.addEventListener("click", async () => {
 });
 
 logoutButton.addEventListener("click", async () => {
+  await recordAuditEvent("user.logout");
+  auditedSessionToken = null;
   if (currentSession?.access_token?.startsWith("test-")) {
     setSession(null);
   } else {
@@ -537,11 +540,31 @@ async function setSession(session) {
     ? `Logged in as ${session.user.email || session.user.id}`
     : "Use your Google account to keep your manuscripts and production choices together.";
   if (loggedIn) {
+    if (auditedSessionToken !== session.access_token) {
+      auditedSessionToken = session.access_token;
+      await recordAuditEvent("user.login");
+    }
     const files = await loadFiles();
     if (!paymentReturnHandled && paymentReturnState) {
       paymentReturnHandled = true;
       await handlePaymentReturn(files);
     }
+  }
+}
+
+async function recordAuditEvent(event) {
+  if (!currentSession?.access_token) return;
+  try {
+    await fetchJson("/api/audit-event.php", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${currentSession.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ event }),
+    });
+  } catch (_error) {
+    // Audit delivery must never block authentication or logout.
   }
 }
 

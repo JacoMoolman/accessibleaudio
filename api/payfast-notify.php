@@ -183,6 +183,13 @@ function payfast_itn_audit(array $config, string $stage, array $payload): void
     ];
     $path = rtrim(ensure_upload_dir($config), '/\\') . '/payfast-itn-audit.jsonl';
     @file_put_contents($path, json_encode($entry, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND | LOCK_EX);
+    audit_event($config, 'payment.notification', $stage === 'queued' ? 'success' : $stage, [], [
+        'stage' => $stage,
+        'payment_reference' => (string) ($payload['m_payment_id'] ?? ''),
+        'payfast_payment_id' => (string) ($payload['pf_payment_id'] ?? ''),
+        'payment_status' => (string) ($payload['payment_status'] ?? ''),
+        'amount_gross' => (string) ($payload['amount_gross'] ?? ''),
+    ]);
 }
 
 function payfast_server_validation(array $payload, bool $sandbox): bool

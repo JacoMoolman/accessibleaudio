@@ -49,4 +49,11 @@ header('Content-Disposition: attachment; filename="' . addcslashes($filename, "\
 header('Content-Length: ' . filesize($realPath));
 header('Cache-Control: private, no-store');
 header('X-Content-Type-Options: nosniff');
+header('X-Request-ID: ' . request_id());
+audit_event($config, 'audio.downloaded', 'success', [], [
+    'upload_id' => $uploadId,
+    'chapter' => $chapterNumber,
+    'filename' => $filename,
+    'access' => $isAdmin ? 'admin' : 'owner',
+]);
 readfile($realPath);
