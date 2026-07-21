@@ -3,6 +3,9 @@
 require_once __DIR__ . '/lib.php';
 
 const PRODUCTION_MAX_ATTEMPTS = 3;
+const PRODUCTION_PCM_SAMPLE_RATE = 24000;
+const PRODUCTION_PCM_BYTES_PER_SAMPLE = 2;
+const PRODUCTION_CHUNK_PAUSE_MS = 500;
 
 function upload_absolute_dir(string $uploadDir, array $record): string
 {
@@ -360,8 +363,19 @@ function join_pcm_chunks_as_mp3(array $paths, string $destination, string $binar
         throw new RuntimeException('Could not create the chapter audio');
     }
     $pcmBytes = 0;
+    $pauseBytes = intdiv(
+        PRODUCTION_PCM_SAMPLE_RATE * PRODUCTION_PCM_BYTES_PER_SAMPLE * PRODUCTION_CHUNK_PAUSE_MS,
+        1000,
+    );
     try {
-        foreach ($paths as $path) {
+        foreach ($paths as $index => $path) {
+            if ($index > 0) {
+                $silence = str_repeat("\0", $pauseBytes);
+                if (fwrite($output, $silence) !== $pauseBytes) {
+                    throw new RuntimeException('Could not add a pause between chapter chunks');
+                }
+                $pcmBytes += $pauseBytes;
+            }
             $info = inspect_pcm_file($path);
             $pcmBytes += $info['bytes'];
             $input = fopen($path, 'rb');
@@ -396,9 +410,10 @@ function join_pcm_chunks_as_mp3(array $paths, string $destination, string $binar
     return [
         'bytes' => $info['bytes'],
         'pcm_bytes' => $pcmBytes,
-        'sample_rate' => 24000,
+        'sample_rate' => PRODUCTION_PCM_SAMPLE_RATE,
         'channels' => 1,
         'bit_rate' => 96000,
+        'chunk_pause_ms' => PRODUCTION_CHUNK_PAUSE_MS,
     ];
 }
 

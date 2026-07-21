@@ -54,13 +54,16 @@ $joinedPath = $temporaryDirectory . '/production-smoke-joined.mp3';
 file_put_contents($pcmOne, str_repeat(pack('v', 1200), 3000));
 file_put_contents($pcmTwo, str_repeat(pack('v', 2200), 3000));
 $testEncoder = static function (string $pcmPath, string $mp3Path): void {
-    assert_true(filesize($pcmPath) === 12000, 'All PCM chunks must be joined before encoding');
+    $assembled = file_get_contents($pcmPath);
+    assert_true(filesize($pcmPath) === 36000, 'All PCM chunks and the half-second pause must be joined before encoding');
+    assert_true(substr($assembled, 6000, 24000) === str_repeat("\0", 24000), 'Joined chunks must contain half a second of PCM silence');
     file_put_contents($mp3Path, "\xff\xfb\x90\x64" . str_repeat("\0", 2000));
 };
 $result = join_pcm_chunks_as_mp3([$pcmOne, $pcmTwo], $joinedPath, '/private/lame', $testEncoder);
 $mp3 = file_get_contents($joinedPath);
 assert_true($result['bytes'] === 2004, 'Encoded MP3 byte count must be recorded');
-assert_true($result['pcm_bytes'] === 12000, 'Joined PCM byte count must include every chunk');
+assert_true($result['pcm_bytes'] === 36000, 'Joined PCM byte count must include every chunk and the inserted pause');
+assert_true($result['chunk_pause_ms'] === 500, 'Chunk joins must report a half-second pause');
 assert_true(ord($mp3[0]) === 0xff && (ord($mp3[1]) & 0xe0) === 0xe0, 'Output must have an MP3 frame signature');
 @unlink($pcmOne);
 @unlink($pcmTwo);
