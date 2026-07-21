@@ -215,6 +215,13 @@ function audit_safe_value(mixed $value, string $key = ''): mixed
     return substr((string) $value, 0, 500);
 }
 
+function ensure_private_directory(string $directory, int $permissions = 0750): bool
+{
+    return is_dir($directory)
+        || @mkdir($directory, $permissions, true)
+        || is_dir($directory);
+}
+
 function audit_event(
     array $config,
     string $event,
@@ -223,7 +230,7 @@ function audit_event(
     array $details = [],
 ): void {
     $uploadDir = rtrim((string) ($config['upload_dir'] ?? ''), '/\\');
-    if ($uploadDir === '' || (!is_dir($uploadDir) && !@mkdir($uploadDir, 0750, true))) {
+    if ($uploadDir === '' || !ensure_private_directory($uploadDir)) {
         error_log('Accessible Audio audit log directory is unavailable');
         return;
     }
@@ -302,7 +309,7 @@ function enforce_rate_limit(array $config, string $bucket, int $limit, int $wind
     $bucket = preg_replace('/[^a-z0-9_-]+/i', '-', $bucket) ?: 'request';
     $ip = trim((string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown')) ?: 'unknown';
     $directory = rtrim((string) $config['upload_dir'], '/\\') . '/.rate-limit/' . $bucket;
-    if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
+    if (!ensure_private_directory($directory, 0700)) {
         json_error('Request protection is temporarily unavailable', 503);
     }
 
@@ -390,7 +397,7 @@ function http_request(string $method, string $url, array $headers, ?string $body
 function ensure_upload_dir(array $config): string
 {
     $dir = $config['upload_dir'];
-    if (!is_dir($dir) && !mkdir($dir, 0750, true)) {
+    if (!ensure_private_directory($dir)) {
         json_error('Could not create upload directory', 500);
     }
     $htaccess = rtrim($dir, '/\\') . '/.htaccess';

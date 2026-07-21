@@ -215,7 +215,7 @@ function next_manifest_chunk(array $manifest): ?array
 function generate_tts_chunk(array $config, array $manifest, array $chunk, string $destination): array
 {
     $directory = dirname($destination);
-    if (!is_dir($directory) && !mkdir($directory, 0750, true) && !is_dir($directory)) {
+    if (!ensure_private_directory($directory)) {
         throw new RuntimeException('Could not create the audio chunk directory');
     }
     $temporary = $destination . '.part';
@@ -428,7 +428,7 @@ function finalize_production(array $config, string $uploadDir, array $record, ar
 {
     $baseDir = upload_absolute_dir($uploadDir, $record);
     $outputDir = $baseDir . '/output';
-    if (!is_dir($outputDir) && !mkdir($outputDir, 0750, true) && !is_dir($outputDir)) {
+    if (!ensure_private_directory($outputDir)) {
         throw new RuntimeException('Could not create the chapter output directory');
     }
     $outputs = [];

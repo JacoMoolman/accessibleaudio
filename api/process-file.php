@@ -35,7 +35,7 @@ $uploadId = uuid_v4();
 $filename = safe_filename($_FILES['file']['name'] ?? 'upload.txt');
 $userPath = 'users/' . hash('sha256', $user['id']) . '/uploads/' . $uploadId;
 $absoluteDir = rtrim($uploadDir, '/\\') . '/' . $userPath;
-if (!is_dir($absoluteDir) && !mkdir($absoluteDir, 0750, true)) {
+if (!ensure_private_directory($absoluteDir)) {
     json_error('Could not create upload folder', 500);
 }
 
