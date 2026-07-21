@@ -498,10 +498,8 @@ def test_public_search_indexing_signals_are_canonical_and_complete():
     assert "RewriteRule ^index\\.html$ https://accessibleaudio.co.za/ [R=301,L]" in htaccess
     assert "RewriteCond %{HTTP_HOST} ^www\\.accessibleaudio\\.co\\.za$ [NC]" in htaccess
 
-    homepage = read("index.html")
-    assert '<a href="submit/">Submit</a>' not in homepage
-
     for page_path in (
+        "index.html",
         "audiobooks.html",
         "contact.html",
         "faq.html",
@@ -510,7 +508,10 @@ def test_public_search_indexing_signals_are_canonical_and_complete():
     ):
         page = read(page_path)
         assert 'href="index.html' not in page
-        assert '<a href="submit/">Submit</a>' in page
+        assert '<a href="submit/">Submit</a>' not in page
+
+    submit_page = read("submit/index.html")
+    assert '<a href="https://accessibleaudio.co.za/submit/"' not in submit_page
 
 
 def test_all_public_headers_label_the_library_as_sample_audiobooks():
