@@ -14,8 +14,8 @@ def test_hostinger_submit_frontend_uses_php_api_and_client_side_analysis():
     html = read("submit/index.html")
     app_js = read("submit/app.js")
 
-    assert 'href="./styles.css?v=20260721-layout1"' in html
-    assert 'src="./app.js?v=20260721-audit1"' in html
+    assert 'href="./styles.css?v=20260721-downloads1"' in html
+    assert 'src="./app.js?v=20260721-downloads1"' in html
     assert 'fetchJson("/api/config.php")' in app_js
     assert 'fetchJson("/api/process-file.php"' in app_js
     assert 'fetchJson("/api/files.php"' in app_js
@@ -100,8 +100,8 @@ def test_submit_narrator_sample_has_working_stop_control():
 
     assert 'id="play-narrator-sample"' in page
     assert 'id="stop-narrator-sample" disabled' in page
-    assert "styles.css?v=20260721-layout1" in page
-    assert "app.js?v=20260721-audit1" in page
+    assert "styles.css?v=20260721-downloads1" in page
+    assert "app.js?v=20260721-downloads1" in page
     assert 'getElementById("stop-narrator-sample")' in app_js
     assert "stopNarratorSampleButton.disabled = false" in app_js
     assert "audio.pause()" in app_js
@@ -149,6 +149,21 @@ def test_existing_upload_rows_restore_primary_checkout_without_a_secondary_butto
     assert "Pay now" not in app_js
     assert "renderPaymentCheckout(data.payment)" in app_js
     assert "Pay with PayFast" in app_js
+
+
+def test_completed_books_scale_from_one_to_many_chapter_downloads():
+    app_js = read("submit/app.js")
+    submit_styles = read("submit/styles.css")
+
+    assert 'class="chapter-downloads"' in app_js
+    assert 'class="chapter-download-grid"' in app_js
+    assert 'class="chapter-download-title"' in app_js
+    assert 'class="chapter-download-meta"' in app_js
+    assert 'outputs.length === 1 ? "chapter" : "chapters"' in app_js
+    assert "repeat(auto-fit, minmax(min(100%, 240px), 1fr))" in submit_styles
+    assert "max-height: min(52vh, 32rem);" in submit_styles
+    assert "overflow-y: auto;" in submit_styles
+    assert "overflow-wrap: anywhere;" in submit_styles
 
 
 def test_payfast_return_shows_confirmation_and_processing_state_without_repayment():
@@ -438,7 +453,7 @@ def test_sitewide_polish_is_deployed_and_respects_reduced_motion():
     for page in public_pages.values():
         assert "styles.css?v=20260718-voicefit1" in page
         assert "scripts/site-motion.js?v=20260715-motion2" in page
-    assert "./styles.css?v=20260721-layout1" in submit
+    assert "./styles.css?v=20260721-downloads1" in submit
     assert "../scripts/site-motion.js?v=20260715-motion2" in submit
     assert '"scripts/site-motion.js"' in deploy
     assert "document.body" in motion

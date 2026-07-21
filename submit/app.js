@@ -671,12 +671,21 @@ function renderFile(file) {
   const created = file.created_at ? new Date(file.created_at).toLocaleString() : "";
   const outputs = Array.isArray(file.outputs) ? file.outputs : [];
   const downloads = outputs.length
-    ? `<div class="chapter-downloads">${outputs.map((output) => `
-        <button
-          type="button"
-          data-download-audio="${escapeHtml(output.download_url)}"
-          data-filename="${escapeHtml(output.filename)}"
-        >Download ${escapeHtml(output.title)} ${escapeHtml(audioFormat(output.filename))}</button>`).join("")}</div>`
+    ? `<section class="chapter-downloads" aria-label="${outputs.length} chapter ${outputs.length === 1 ? "download" : "downloads"}">
+        <div class="chapter-downloads-heading">
+          <strong>${outputs.length} ${outputs.length === 1 ? "chapter" : "chapters"} ready</strong>
+          <span>Download each audio file separately.</span>
+        </div>
+        <div class="chapter-download-grid">${outputs.map((output) => `
+          <button
+            type="button"
+            data-download-audio="${escapeHtml(output.download_url)}"
+            data-filename="${escapeHtml(output.filename)}"
+          >
+            <span class="chapter-download-title">${escapeHtml(output.title)}</span>
+            <span class="chapter-download-meta">Download ${escapeHtml(audioFormat(output.filename))}</span>
+          </button>`).join("")}</div>
+      </section>`
     : "";
   const progress = fileStatusCopy(file);
   return `
