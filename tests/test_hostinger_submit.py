@@ -132,6 +132,11 @@ def test_uploads_can_be_deleted_and_status_badge_stays_readable():
     assert ".submit-section .file-row .badge" in submit_styles
     assert "color: #052c27;" in submit_styles
     assert "button.danger" in submit_styles
+    assert "grid-template-columns: minmax(0, 1fr) auto;" in submit_styles
+    assert ".file-row > *" in submit_styles
+    assert "grid-column: 1 / -1;" in submit_styles
+    assert ".file-row-actions button" in submit_styles
+    assert ".submit-section .production-status strong" in submit_styles
 
 
 def test_existing_upload_rows_restore_primary_checkout_without_a_secondary_button():

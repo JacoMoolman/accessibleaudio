@@ -733,14 +733,18 @@ button.ghost {
 }
 
 .file-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
   gap: 16px;
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.64);
+}
+
+.file-row > * {
+  min-width: 0;
 }
 
 .file-row strong,
@@ -756,10 +760,16 @@ button.ghost {
   gap: 10px;
 }
 
+.file-row-actions button {
+  width: auto;
+}
+
 .production-status {
-  flex: 1 0 100%;
+  grid-column: 1 / -1;
   display: grid;
   gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
   padding: 12px 14px;
   border-left: 3px solid var(--gold);
   border-radius: 4px;
@@ -904,6 +914,10 @@ button.ghost {
 .submit-section .file-row .badge {
   color: #052c27;
   background: #9ff5e7;
+}
+
+.submit-section .production-status strong {
+  color: var(--submit-ink);
 }
 
 .submit-section button.danger {
@@ -1216,13 +1230,17 @@ button.ghost {
   }
 
   .panel-header,
-  .file-row,
   .site-footer {
     align-items: flex-start;
     flex-direction: column;
   }
 
+  .file-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .file-row-actions {
+    grid-column: 1;
     width: 100%;
     justify-content: space-between;
   }
