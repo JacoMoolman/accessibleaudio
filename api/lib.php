@@ -579,6 +579,22 @@ function request_base_url(array $config): string
     return 'https://accessibleaudio.co.za';
 }
 
+function payment_reference(array $record): string
+{
+    $payfastPaymentId = trim((string) ($record['payfast_payment_id'] ?? ''));
+    if ($payfastPaymentId !== '') {
+        return $payfastPaymentId;
+    }
+
+    $merchantPaymentId = trim((string) ($record['merchant_payment_id'] ?? ''));
+    if ($merchantPaymentId !== '') {
+        return $merchantPaymentId;
+    }
+
+    $uploadId = trim((string) ($record['id'] ?? ''));
+    return $uploadId === '' ? '' : 'AA-' . $uploadId;
+}
+
 function append_record(string $uploadDir, array $record): void
 {
     $index = rtrim($uploadDir, '/\\') . '/uploads.jsonl';

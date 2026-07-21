@@ -564,6 +564,19 @@ def test_paid_payfast_notifications_are_verified_and_idempotent():
     assert "['uploaded', 'paid']" in endpoint
 
 
+def test_admin_uses_the_best_available_payfast_payment_reference():
+    php_lib = read("api/lib.php")
+    admin_files = read("api/admin-files.php")
+
+    helper = php_lib[
+        php_lib.index("function payment_reference") : php_lib.index("function append_record")
+    ]
+    assert "$record['payfast_payment_id']" in helper
+    assert "$record['merchant_payment_id']" in helper
+    assert "'AA-' . $uploadId" in helper
+    assert "'payfast_payment_id' => payment_reference($record)" in admin_files
+
+
 def test_paid_orders_are_processed_server_side_into_downloadable_mp3_chapters():
     production = read("api/production.php")
     worker = read("api/process-queue.php")
