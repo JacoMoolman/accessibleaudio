@@ -86,6 +86,9 @@ function build_production_manifest(array $config, string $uploadDir, array $reco
 
 function split_book_into_chapters(string $text): array
 {
+    // A UTF-8 BOM is invisible to readers but prevents the first line from
+    // matching the anchored chapter-heading pattern.
+    $text = preg_replace('/^\xEF\xBB\xBF/', '', $text) ?? $text;
     $text = preg_replace("/\r\n?|\x{2028}|\x{2029}/u", "\n", $text) ?? $text;
     $pattern = '/^[ \t]*(chapter|hoofstuk|isahluko|isigaba|chapitre|cap[ií]tulo|capitulo|kapitel|capitolo|part|book|deel)\b[^\n]*$/imu';
     preg_match_all($pattern, $text, $matches, PREG_OFFSET_CAPTURE);

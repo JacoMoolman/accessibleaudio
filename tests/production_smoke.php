@@ -31,6 +31,15 @@ $text = "CHAPTER I.\n\nDown the Rabbit-Hole\n\n"
 $chapters = split_book_into_chapters($text);
 assert_true(count($chapters) === 2, 'Chapter detection must return two chapters');
 assert_true(str_contains($chapters[0]['title'], 'Down the Rabbit-Hole'), 'Chapter subtitle must be retained');
+$bomText = "\xEF\xBB\xBFCHAPTER I.\r\nLooking-Glass house\r\n\r\n"
+    . str_repeat("The white kitten sat beside Alice. This is a sentence.\r\n\r\n", 12)
+    . "CHAPTER II.\r\nThe Garden of Live Flowers\r\n\r\n"
+    . str_repeat("The flowers spoke to Alice. This is another sentence.\r\n\r\n", 12)
+    . "CHAPTER III.\r\nLooking-Glass Insects\r\n\r\n"
+    . str_repeat("Alice met a curious insect. This is the final sentence.\r\n\r\n", 12);
+$bomChapters = split_book_into_chapters($bomText);
+assert_true(count($bomChapters) === 3, 'A UTF-8 BOM must not hide the first chapter');
+assert_true(str_starts_with($bomChapters[0]['title'], 'CHAPTER I.'), 'The first BOM-prefixed chapter must be retained');
 $chunks = chunk_speech_text($chapters[0]['text'], 1000);
 assert_true(count($chunks) >= 2, 'Long chapters must be divided into chunks');
 assert_true(max(array_map('mb_strlen', $chunks)) <= 1000, 'Chunks must stay within the character limit');
